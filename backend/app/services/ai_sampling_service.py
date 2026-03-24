@@ -50,8 +50,8 @@ class IntelligentSamplingResult:
 class VoucherRiskAnalyzer:
     """凭证风险分析器"""
 
-    def __init__(self, llm_service: LLMService = None):
-        self.llm = llm_service or llm_service
+    def __init__(self, llm_svc: LLMService = None):
+        self.llm = llm_svc if llm_svc else llm_service
 
     async def analyze_voucher(
         self,
@@ -182,8 +182,8 @@ class VoucherRiskAnalyzer:
 class IntelligentSampler:
     """智能抽样器"""
 
-    def __init__(self, llm_service: LLMService = None):
-        self.llm = llm_service or llm_service
+    def __init__(self, llm_svc: LLMService = None):
+        self.llm = llm_svc if llm_svc else llm_service
         self.risk_analyzer = VoucherRiskAnalyzer(self.llm)
 
     async def recommend_samples(
@@ -447,8 +447,8 @@ class IntelligentSampler:
 class VoucherUnderstandingService:
     """凭证理解服务"""
 
-    def __init__(self, llm_service: LLMService = None):
-        self.llm = llm_service or llm_service
+    def __init__(self, llm_svc: LLMService = None):
+        self.llm = llm_svc if llm_svc else llm_service
 
     async def understand_voucher(
         self,

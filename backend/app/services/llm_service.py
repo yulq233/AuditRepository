@@ -189,19 +189,39 @@ class OllamaAdapter(LLMAdapter):
 class QwenAdapter(LLMAdapter):
     """阿里云通义千问适配器
     支持模型: qwen3.5-plus, kimi-k2.5, MiniMax-M2.5, qwen3-max-2026-01-23
+    支持百炼Coding Plan的Anthropic兼容模式
     """
 
     def __init__(self, config: LLMConfig):
         super().__init__(config)
         self.base_url = config.base_url or settings.QWEN_BASE_URL
         self.api_key = config.api_key or settings.QWEN_API_KEY
+        # 检测是否使用Anthropic兼容模式（百炼Coding Plan）
+        self._is_anthropic_mode = "anthropic" in self.base_url.lower()
 
     def _get_headers(self) -> Dict[str, str]:
         """获取请求头"""
-        return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
+        if self._is_anthropic_mode:
+            # 百炼Coding Plan Anthropic兼容模式
+            return {
+                "x-api-key": self.api_key,
+                "anthropic-version": "2023-06-01",
+                "Content-Type": "application/json"
+            }
+        else:
+            # 标准OpenAI兼容模式
+            return {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+
+    def _build_anthropic_messages(self, messages: List[ChatMessage]) -> List[Dict[str, str]]:
+        """构建Anthropic格式消息（不包含system角色）"""
+        result = []
+        for m in messages:
+            if m.role != "system":
+                result.append({"role": m.role, "content": m.content})
+        return result
 
     async def chat(
         self,
@@ -209,7 +229,70 @@ class QwenAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None
     ) -> LLMResponse:
-        """通义千问聊天补全"""
+        """聊天补全"""
+        if self._is_anthropic_mode:
+            return await self._chat_anthropic(messages, temperature, max_tokens)
+        else:
+            return await self._chat_openai(messages, temperature, max_tokens)
+
+    async def _chat_anthropic(
+        self,
+        messages: List[ChatMessage],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None
+    ) -> LLMResponse:
+        """Anthropic兼容模式聊天"""
+        url = f"{self.base_url}/v1/messages"
+
+        # 提取system消息
+        system_content = None
+        chat_messages = []
+        for m in messages:
+            if m.role == "system":
+                system_content = m.content
+            else:
+                chat_messages.append({"role": m.role, "content": m.content})
+
+        payload = {
+            "model": self.config.model,
+            "max_tokens": max_tokens or self.config.max_tokens,
+            "messages": chat_messages
+        }
+        if system_content:
+            payload["system"] = system_content
+
+        response = await self.client.post(url, json=payload, headers=self._get_headers())
+        response.raise_for_status()
+
+        data = response.json()
+
+        # 解析Anthropic格式响应
+        content_parts = []
+        for block in data.get("content", []):
+            if block.get("type") == "text":
+                content_parts.append(block.get("text", ""))
+
+        content = "".join(content_parts)
+
+        return LLMResponse(
+            content=content,
+            model=self.config.model,
+            provider="qwen",
+            usage={
+                "input_tokens": data.get("usage", {}).get("input_tokens", 0),
+                "output_tokens": data.get("usage", {}).get("output_tokens", 0),
+            },
+            finish_reason=data.get("stop_reason", "stop"),
+            raw_response=data
+        )
+
+    async def _chat_openai(
+        self,
+        messages: List[ChatMessage],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None
+    ) -> LLMResponse:
+        """OpenAI兼容模式聊天"""
         url = f"{self.base_url}/chat/completions"
 
         payload = {
@@ -240,7 +323,57 @@ class QwenAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None
     ) -> AsyncGenerator[str, None]:
-        """通义千问流式聊天"""
+        """流式聊天补全"""
+        if self._is_anthropic_mode:
+            async for chunk in self._chat_stream_anthropic(messages, temperature, max_tokens):
+                yield chunk
+        else:
+            async for chunk in self._chat_stream_openai(messages, temperature, max_tokens):
+                yield chunk
+
+    async def _chat_stream_anthropic(
+        self,
+        messages: List[ChatMessage],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None
+    ) -> AsyncGenerator[str, None]:
+        """Anthropic兼容模式流式聊天"""
+        url = f"{self.base_url}/v1/messages"
+
+        chat_messages = []
+        for m in messages:
+            if m.role != "system":
+                chat_messages.append({"role": m.role, "content": m.content})
+
+        payload = {
+            "model": self.config.model,
+            "max_tokens": max_tokens or self.config.max_tokens,
+            "messages": chat_messages,
+            "stream": True
+        }
+
+        async with self.client.stream("POST", url, json=payload, headers=self._get_headers()) as response:
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    data_str = line[6:]
+                    try:
+                        data = json.loads(data_str)
+                        if data.get("type") == "content_block_delta":
+                            delta = data.get("delta", {})
+                            if delta.get("type") == "text_delta":
+                                text = delta.get("text", "")
+                                if text:
+                                    yield text
+                    except json.JSONDecodeError:
+                        continue
+
+    async def _chat_stream_openai(
+        self,
+        messages: List[ChatMessage],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None
+    ) -> AsyncGenerator[str, None]:
+        """OpenAI兼容模式流式聊天"""
         url = f"{self.base_url}/chat/completions"
 
         payload = {
@@ -267,7 +400,11 @@ class QwenAdapter(LLMAdapter):
                         continue
 
     async def embed(self, text: str) -> List[float]:
-        """通义千问文本向量化"""
+        """文本向量化"""
+        # Anthropic模式不支持embedding，返回空列表
+        if self._is_anthropic_mode:
+            return []
+
         url = f"{self.base_url}/embeddings"
 
         payload = {
