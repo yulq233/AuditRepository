@@ -1,6 +1,7 @@
 """
 AI审计抽凭助手 - FastAPI后端入口
 """
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -10,12 +11,34 @@ from app.core.config import settings
 from app.core.database import init_db, close_db
 from app.api import projects, vouchers, sampling, ai, auth, files, tasks, papers, audit_trail
 
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     # 启动时初始化数据库
     init_db()
+
+    # 打印AI配置信息
+    logger.info("=" * 50)
+    logger.info("AI审计抽凭助手 启动中...")
+    logger.info(f"AI提供商: {settings.AI_PROVIDER}")
+    logger.info(f"默认模型: {settings.AI_DEFAULT_MODEL}")
+    logger.info(f"可用模型: {settings.get_available_models()}")
+    logger.info(f"温度参数: {settings.AI_TEMPERATURE}")
+    logger.info(f"最大Token: {settings.AI_MAX_TOKENS}")
+    if settings.QWEN_API_KEY:
+        logger.info("通义千问 API Key: 已配置")
+    else:
+        logger.info("通义千问 API Key: 未配置")
+    logger.info("=" * 50)
+
     yield
     # 关闭时清理资源
     close_db()
@@ -63,5 +86,5 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=9000,
-        reload=True,
+        reload=False,  # 禁用reload以避免DuckDB多进程冲突
     )

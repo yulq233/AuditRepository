@@ -435,6 +435,39 @@ class SemanticSearchService:
         self.vector_store.delete_by_voucher(voucher_id)
 
 
-# 全局服务实例
-embedding_service = EmbeddingService()
-semantic_search_service = SemanticSearchService()
+# 全局服务实例 (延迟初始化以避免多进程问题)
+_embedding_service: Optional['EmbeddingService'] = None
+_semantic_search_service: Optional['SemanticSearchService'] = None
+
+
+def get_embedding_service() -> 'EmbeddingService':
+    """获取Embedding服务实例（延迟初始化）"""
+    global _embedding_service
+    if _embedding_service is None:
+        _embedding_service = EmbeddingService()
+    return _embedding_service
+
+
+def get_semantic_search_service() -> 'SemanticSearchService':
+    """获取语义搜索服务实例（延迟初始化）"""
+    global _semantic_search_service
+    if _semantic_search_service is None:
+        _semantic_search_service = SemanticSearchService()
+    return _semantic_search_service
+
+
+# 兼容旧代码的属性访问
+class _LazyServiceProxy:
+    """延迟加载代理"""
+    def __getattr__(self, name):
+        return getattr(get_embedding_service(), name)
+
+
+class _LazySemanticProxy:
+    """延迟加载代理"""
+    def __getattr__(self, name):
+        return getattr(get_semantic_search_service(), name)
+
+
+embedding_service = _LazyServiceProxy()
+semantic_search_service = _LazySemanticProxy()

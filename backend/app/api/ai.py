@@ -8,6 +8,7 @@ from datetime import datetime
 import json
 
 from app.core.database import get_db_cursor
+from app.core.config import settings
 from app.services.llm_service import LLMConfig, LLMFactory, llm_service
 from app.services.ai_sampling_service import (
     risk_analyzer, intelligent_sampler,
@@ -90,58 +91,58 @@ async def list_models():
     """
     获取可用AI模型列表
 
-    返回所有支持的模型及其可用状态
+    返回所有配置的模型及其可用状态
     """
-    models = [
-        ModelInfo(
+    models = []
+
+    # 从配置获取可用模型列表
+    available_models = settings.get_available_models()
+
+    for model_name in available_models:
+        model_info = settings.get_model_info(model_name)
+        models.append(ModelInfo(
+            provider=settings.AI_PROVIDER,
+            model=model_name,
+            is_available=settings.QWEN_API_KEY is not None if settings.AI_PROVIDER == "qwen" else True,
+            description=model_info.get("description", "")
+        ))
+
+    # 添加Ollama本地模型
+    if settings.OLLAMA_BASE_URL:
+        models.append(ModelInfo(
             provider="ollama",
-            model="qwen2.5:14b",
+            model=settings.OLLAMA_DEFAULT_MODEL,
             is_available=True,
             description="本地部署，支持离线使用"
-        ),
-        ModelInfo(
-            provider="qwen",
-            model="qwen-turbo",
-            is_available=False,  # 需要API Key
-            description="阿里云通义千问Turbo，速度快"
-        ),
-        ModelInfo(
-            provider="qwen",
-            model="qwen-plus",
-            is_available=False,
-            description="阿里云通义千问Plus，能力强"
-        ),
-        ModelInfo(
-            provider="qwen",
-            model="qwen-max",
-            is_available=False,
-            description="阿里云通义千问Max，最强能力"
-        ),
-        ModelInfo(
-            provider="ernie",
-            model="ernie-4.0-8k",
-            is_available=False,
-            description="百度文心一言4.0"
-        ),
-        ModelInfo(
-            provider="ernie",
-            model="ernie-3.5-8k",
-            is_available=False,
-            description="百度文心一言3.5"
-        ),
-        ModelInfo(
-            provider="zhipu",
-            model="glm-4",
-            is_available=False,
-            description="智谱GLM-4"
-        ),
-        ModelInfo(
-            provider="zhipu",
-            model="glm-3-turbo",
-            is_available=False,
-            description="智谱GLM-3 Turbo"
-        ),
-    ]
+        ))
+
+    # 添加其他提供商（如果有API Key）
+    if settings.ERNIE_API_KEY and settings.ERNIE_SECRET_KEY:
+        models.extend([
+            ModelInfo(
+                provider="ernie",
+                model="ernie-4.0-8k",
+                is_available=True,
+                description="百度文心一言4.0"
+            ),
+            ModelInfo(
+                provider="ernie",
+                model="ernie-3.5-8k",
+                is_available=True,
+                description="百度文心一言3.5"
+            )
+        ])
+
+    if settings.ZHIPU_API_KEY:
+        models.extend([
+            ModelInfo(
+                provider="zhipu",
+                model="glm-4",
+                is_available=True,
+                description="智谱GLM-4"
+            )
+        ])
+
     return models
 
 

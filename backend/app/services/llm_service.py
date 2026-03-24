@@ -1,6 +1,7 @@
 """
 LLM适配器框架
 统一接口支持多种大语言模型：Ollama、通义千问、文心一言、智谱GLM等
+模型配置从环境变量(.env)读取
 """
 import os
 import json
@@ -17,8 +18,8 @@ from app.core.config import settings
 @dataclass
 class LLMConfig:
     """LLM配置"""
-    provider: str = "ollama"
-    model: str = "qwen2.5:14b"
+    provider: str = "qwen"
+    model: str = "qwen3.5-plus"
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     temperature: float = 0.7
@@ -95,7 +96,7 @@ class OllamaAdapter(LLMAdapter):
 
     def __init__(self, config: LLMConfig):
         super().__init__(config)
-        self.base_url = config.base_url or "http://localhost:11434"
+        self.base_url = config.base_url or settings.OLLAMA_BASE_URL
 
     async def chat(
         self,
@@ -186,12 +187,14 @@ class OllamaAdapter(LLMAdapter):
 
 
 class QwenAdapter(LLMAdapter):
-    """阿里云通义千问适配器"""
+    """阿里云通义千问适配器
+    支持模型: qwen3.5-plus, kimi-k2.5, MiniMax-M2.5, qwen3-max-2026-01-23
+    """
 
     def __init__(self, config: LLMConfig):
         super().__init__(config)
-        self.base_url = config.base_url or "https://dashscope.aliyuncs.com/compatible-mode/v1"
-        self.api_key = config.api_key or os.environ.get("QWEN_API_KEY")
+        self.base_url = config.base_url or settings.QWEN_BASE_URL
+        self.api_key = config.api_key or settings.QWEN_API_KEY
 
     def _get_headers(self) -> Dict[str, str]:
         """获取请求头"""
@@ -288,8 +291,8 @@ class ERNIEAdapter(LLMAdapter):
 
     def __init__(self, config: LLMConfig):
         super().__init__(config)
-        self.api_key = config.api_key or os.environ.get("ERNIE_API_KEY")
-        self.secret_key = os.environ.get("ERNIE_SECRET_KEY")
+        self.api_key = config.api_key or settings.ERNIE_API_KEY
+        self.secret_key = settings.ERNIE_SECRET_KEY
         self._access_token = None
         self._token_expire_time = 0
 
@@ -395,7 +398,7 @@ class ZhipuAdapter(LLMAdapter):
     def __init__(self, config: LLMConfig):
         super().__init__(config)
         self.base_url = config.base_url or "https://open.bigmodel.cn/api/paas/v4"
-        self.api_key = config.api_key or os.environ.get("ZHIPU_API_KEY")
+        self.api_key = config.api_key or settings.ZHIPU_API_KEY
 
     def _get_headers(self) -> Dict[str, str]:
         """获取请求头"""
@@ -518,14 +521,24 @@ class LLMFactory:
         return list(cls._adapters.keys())
 
 
+def create_default_config() -> LLMConfig:
+    """从配置创建默认LLM配置"""
+    return LLMConfig(
+        provider=settings.AI_PROVIDER,
+        model=settings.AI_DEFAULT_MODEL,
+        api_key=settings.QWEN_API_KEY if settings.AI_PROVIDER == "qwen" else None,
+        base_url=settings.QWEN_BASE_URL if settings.AI_PROVIDER == "qwen" else None,
+        temperature=settings.AI_TEMPERATURE,
+        max_tokens=settings.AI_MAX_TOKENS,
+    )
+
+
 class LLMService:
     """LLM服务统一接口"""
 
     def __init__(self, config: LLMConfig = None):
-        self.config = config or LLMConfig(
-            provider=settings.DEFAULT_AI_PROVIDER,
-            model="qwen2.5:14b"
-        )
+        # 使用配置文件中的默认配置
+        self.config = config or create_default_config()
         self._adapter: Optional[LLMAdapter] = None
 
     @property
@@ -621,5 +634,5 @@ class LLMService:
         return base_prompt
 
 
-# 全局LLM服务实例
+# 全局LLM服务实例 - 启动时从配置文件初始化
 llm_service = LLMService()
