@@ -1,0 +1,51 @@
+# FastAPI and ASGI
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Database
+duckdb==0.9.2
+duckdb-engine==0.9.5
+
+# Data Processing
+pandas==2.1.4
+openpyxl==3.1.2
+python-dateutil==2.8.2
+
+# AI/ML
+langchain==0.1.0
+langchain-community==0.0.10
+openai==1.10.0
+tiktoken==0.5.2
+
+# OCR
+paddleocr==2.7.0.3
+paddlepaddle==2.5.2
+opencv-python==4.9.0.80
+Pillow==10.2.0
+
+# Web Scraping
+playwright==1.41.0
+scrapy==2.11.0
+beautifulsoup4==4.12.3
+lxml==5.1.0
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Utils
+pydantic==2.5.3
+pydantic-settings==2.1.0
+PyYAML==6.0.1
+httpx==0.26.0
+aiofiles==23.2.1
+tenacity==8.2.3
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+
+# Vector DB (optional)
+# qdrant-client==1.7.0
+# pymilvus==2.3.5

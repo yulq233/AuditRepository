@@ -1,0 +1,66 @@
+# AI模型配置
+
+# 默认提供商
+default_provider: "ollama"
+
+# 各提供商配置
+ai_providers:
+  # Ollama 本地部署
+  ollama:
+    enabled: true
+    base_url: "http://localhost:11434"
+    default_model: "qwen2.5:14b"
+    models:
+      - name: "qwen2.5:14b"
+        description: "通义千问2.5 14B本地版"
+      - name: "llama3.1:8b"
+        description: "Llama 3.1 8B"
+
+  # 阿里云通义千问
+  qwen:
+    enabled: true
+    api_key: "${QWEN_API_KEY}"
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    default_model: "qwen-turbo"
+    models:
+      - name: "qwen-turbo"
+        description: "通义千问Turbo"
+      - name: "qwen-plus"
+        description: "通义千问Plus"
+      - name: "qwen-max"
+        description: "通义千问Max"
+
+  # 百度文心一言
+  ernie:
+    enabled: true
+    api_key: "${ERNIE_API_KEY}"
+    secret_key: "${ERNIE_SECRET_KEY}"
+    default_model: "ernie-4.0-8k"
+    models:
+      - name: "ernie-4.0-8k"
+        description: "文心一言4.0"
+      - name: "ernie-3.5-8k"
+        description: "文心一言3.5"
+
+  # 智谱GLM
+  zhipu:
+    enabled: false
+    api_key: "${ZHIPU_API_KEY}"
+    default_model: "glm-4"
+    models:
+      - name: "glm-4"
+        description: "智谱GLM-4"
+      - name: "glm-3-turbo"
+        description: "智谱GLM-3 Turbo"
+
+# Embedding 配置
+embedding:
+  provider: "ollama"
+  model: "nomic-embed-text"
+
+# 向量数据库配置 (可选)
+vector_db:
+  enabled: false
+  provider: "qdrant"
+  host: "localhost"
+  port: 6333
