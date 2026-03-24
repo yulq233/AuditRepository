@@ -1,0 +1,138 @@
+// =============================================
+// AI审计抽凭系统 - 设计令牌
+// =============================================
+
+// ---------------------------------------------
+// 颜色系统
+// ---------------------------------------------
+
+// 主色
+$primary-color: #409eff;
+$primary-light: #66b1ff;
+$primary-lighter: #c6e2ff;
+$primary-dark: #337ecc;
+
+// 功能色
+$success-color: #67c23a;
+$success-light: #95d475;
+$success-lighter: #e1f3d8;
+
+$warning-color: #e6a23c;
+$warning-light: #eebe77;
+$warning-lighter: #fdf6ec;
+
+$danger-color: #f56c6c;
+$danger-light: #f89898;
+$danger-lighter: #fde2e2;
+
+$info-color: #909399;
+$info-light: #b1b3b8;
+$info-lighter: #e9e9eb;
+
+// 中性色
+$text-primary: #303133;
+$text-regular: #606266;
+$text-secondary: #909399;
+$text-placeholder: #c0c4cc;
+$text-disabled: #c0c4cc;
+
+$border-color: #dcdfe6;
+$border-light: #e4e7ed;
+$border-lighter: #ebeef5;
+
+$background-color: #f5f7fa;
+$background-white: #ffffff;
+$background-dark: #304156;
+
+// ---------------------------------------------
+// 间距系统
+// ---------------------------------------------
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+$spacing-xxl: 48px;
+
+// ---------------------------------------------
+// 字体系统
+// ---------------------------------------------
+$font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+
+$font-size-xs: 12px;
+$font-size-sm: 13px;
+$font-size-md: 14px;
+$font-size-lg: 16px;
+$font-size-xl: 18px;
+$font-size-xxl: 20px;
+$font-size-display: 24px;
+
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+$line-height-tight: 1.25;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.75;
+
+// ---------------------------------------------
+// 圆角系统
+// ---------------------------------------------
+$border-radius-sm: 2px;
+$border-radius-md: 4px;
+$border-radius-lg: 8px;
+$border-radius-xl: 12px;
+$border-radius-xxl: 16px;
+$border-radius-full: 9999px;
+
+// ---------------------------------------------
+// 阴影系统
+// ---------------------------------------------
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+$shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+$shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.16);
+
+// 卡片悬浮阴影
+$shadow-card: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+$shadow-card-hover: 0 6px 16px 0 rgba(0, 0, 0, 0.12);
+
+// ---------------------------------------------
+// 过渡动画
+// ---------------------------------------------
+$transition-fast: 0.15s ease;
+$transition-normal: 0.25s ease;
+$transition-slow: 0.35s ease;
+
+// ---------------------------------------------
+// 布局
+// ---------------------------------------------
+$sidebar-width: 220px;
+$sidebar-collapsed-width: 64px;
+$header-height: 60px;
+$footer-height: 48px;
+
+// 内容区域最大宽度
+$content-max-width: 1440px;
+
+// ---------------------------------------------
+// 断点
+// ---------------------------------------------
+$breakpoint-xs: 480px;
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+$breakpoint-xxl: 1600px;
+
+// ---------------------------------------------
+// Z-Index 层级
+// ---------------------------------------------
+$z-index-dropdown: 1000;
+$z-index-sticky: 1020;
+$z-index-fixed: 1030;
+$z-index-modal-backdrop: 1040;
+$z-index-modal: 1050;
+$z-index-popover: 1060;
+$z-index-tooltip: 1070;

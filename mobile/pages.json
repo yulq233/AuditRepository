@@ -1,0 +1,90 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "AI审计抽凭"
+      }
+    },
+    {
+      "path": "pages/project/detail",
+      "style": {
+        "navigationBarTitleText": "项目详情"
+      }
+    },
+    {
+      "path": "pages/vouchers/list",
+      "style": {
+        "navigationBarTitleText": "凭证列表"
+      }
+    },
+    {
+      "path": "pages/risk/index",
+      "style": {
+        "navigationBarTitleText": "风险画像"
+      }
+    },
+    {
+      "path": "pages/sampling/execute",
+      "style": {
+        "navigationBarTitleText": "执行抽样"
+      }
+    },
+    {
+      "path": "pages/sampling/result",
+      "style": {
+        "navigationBarTitleText": "抽样结果"
+      }
+    },
+    {
+      "path": "pages/task/index",
+      "style": {
+        "navigationBarTitleText": "我的任务"
+      }
+    },
+    {
+      "path": "pages/paper/index",
+      "style": {
+        "navigationBarTitleText": "工作底稿"
+      }
+    },
+    {
+      "path": "pages/profile/profile",
+      "style": {
+        "navigationBarTitleText": "个人中心"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "AI审计抽凭",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f5f5"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#409eff",
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/task/index",
+        "text": "任务",
+        "iconPath": "static/tabbar/task.png",
+        "selectedIconPath": "static/tabbar/task-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "static/tabbar/profile.png",
+        "selectedIconPath": "static/tabbar/profile-active.png"
+      }
+    ]
+  }
+}

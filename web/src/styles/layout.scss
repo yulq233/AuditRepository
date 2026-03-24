@@ -1,0 +1,92 @@
+.layout-container {
+  display: flex;
+  height: 100vh;
+}
+
+// 侧边栏
+.sidebar {
+  width: $sidebar-width;
+  background: #304156;
+  height: 100%;
+  overflow-y: auto;
+
+  .logo {
+    height: $header-height;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    background: #263445;
+
+    .logo-icon {
+      margin-right: 10px;
+    }
+  }
+
+  .el-menu {
+    border-right: none;
+    background: transparent;
+  }
+
+  .el-menu-item,
+  .el-sub-menu__title {
+    color: #bfcbd9;
+
+    &:hover {
+      background: #263445;
+    }
+  }
+
+  .el-menu-item.is-active {
+    color: #409eff;
+    background: #263445;
+  }
+}
+
+// 主内容区
+.main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// 顶部导航
+.header {
+  height: $header-height;
+  background: #fff;
+  border-bottom: 1px solid $border-color;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+
+      .username {
+        margin-left: 8px;
+        color: $text-regular;
+      }
+    }
+  }
+}
+
+// 内容区
+.content {
+  flex: 1;
+  overflow-y: auto;
+}

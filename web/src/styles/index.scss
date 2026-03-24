@@ -1,0 +1,366 @@
+@import './variables.scss';
+@import './layout.scss';
+
+// =============================================
+// 基础重置
+// =============================================
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: $font-family;
+  font-size: $font-size-md;
+  color: $text-primary;
+  background-color: $background-color;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// =============================================
+// 滚动条样式
+// =============================================
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $border-color;
+  border-radius: $border-radius-full;
+
+  &:hover {
+    background: $text-placeholder;
+  }
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+// =============================================
+// 布局容器
+// =============================================
+
+.page-container {
+  padding: $spacing-lg;
+  background: $background-color;
+  min-height: calc(100vh - $header-height);
+  max-width: $content-max-width;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-lg;
+
+  .page-title {
+    font-size: $font-size-xxl;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  .page-subtitle {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    margin-top: $spacing-xs;
+  }
+}
+
+// =============================================
+// 卡片组件
+// =============================================
+
+.card-container {
+  background: $background-white;
+  border-radius: $border-radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-card;
+  transition: box-shadow $transition-normal;
+
+  &:hover {
+    box-shadow: $shadow-card-hover;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-md;
+    border-bottom: 1px solid $border-lighter;
+  }
+
+  .card-title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: $spacing-sm;
+  }
+}
+
+// =============================================
+// 筛选区域
+// =============================================
+
+.filter-container {
+  margin-bottom: $spacing-lg;
+  padding: $spacing-md;
+  background: $background-white;
+  border-radius: $border-radius-md;
+
+  .el-form-item {
+    margin-bottom: 0;
+    margin-right: $spacing-md;
+  }
+}
+
+// =============================================
+// 分页
+// =============================================
+
+.pagination-container {
+  margin-top: $spacing-lg;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: $spacing-md;
+
+  .pagination-info {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+  }
+}
+
+// =============================================
+// 状态标签
+// =============================================
+
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-md;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+
+  &.active {
+    background: $success-lighter;
+    color: $success-color;
+  }
+
+  &.completed {
+    background: $primary-lighter;
+    color: $primary-color;
+  }
+
+  &.archived {
+    background: $info-lighter;
+    color: $info-color;
+  }
+
+  &.pending {
+    background: $warning-lighter;
+    color: $warning-color;
+  }
+
+  &.blocked {
+    background: $danger-lighter;
+    color: $danger-color;
+  }
+}
+
+// =============================================
+// 风险标签
+// =============================================
+
+.risk-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-md;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+
+  &.high {
+    background: $danger-lighter;
+    color: $danger-color;
+  }
+
+  &.medium {
+    background: $warning-lighter;
+    color: $warning-color;
+  }
+
+  &.low {
+    background: $success-lighter;
+    color: $success-color;
+  }
+}
+
+// =============================================
+// 匹配状态
+// =============================================
+
+.match-status {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+
+  &.fully_matched {
+    color: $success-color;
+  }
+
+  &.partially_matched {
+    color: $warning-color;
+  }
+
+  &.not_matched {
+    color: $danger-color;
+  }
+
+  &.exception {
+    color: $info-color;
+  }
+}
+
+// =============================================
+// 统计卡片
+// =============================================
+
+.stat-card {
+  .stat-content {
+    display: flex;
+    align-items: center;
+  }
+
+  .stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: $border-radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $background-white;
+    margin-right: $spacing-md;
+    flex-shrink: 0;
+  }
+
+  .stat-info {
+    .stat-value {
+      font-size: 28px;
+      font-weight: $font-weight-bold;
+      color: $text-primary;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: $font-size-sm;
+      color: $text-secondary;
+      margin-top: $spacing-xs;
+    }
+  }
+}
+
+// =============================================
+// 空状态
+// =============================================
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xxl;
+  color: $text-secondary;
+
+  .empty-icon {
+    font-size: 64px;
+    color: $text-placeholder;
+    margin-bottom: $spacing-md;
+  }
+
+  .empty-text {
+    font-size: $font-size-md;
+    margin-bottom: $spacing-lg;
+  }
+}
+
+// =============================================
+// 工具类
+// =============================================
+
+// 文本对齐
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+// 文本颜色
+.text-primary { color: $primary-color; }
+.text-success { color: $success-color; }
+.text-warning { color: $warning-color; }
+.text-danger { color: $danger-color; }
+.text-muted { color: $text-secondary; }
+
+// 字体粗细
+.font-normal { font-weight: $font-weight-normal; }
+.font-medium { font-weight: $font-weight-medium; }
+.font-semibold { font-weight: $font-weight-semibold; }
+.font-bold { font-weight: $font-weight-bold; }
+
+// 间距
+.mt-sm { margin-top: $spacing-sm; }
+.mt-md { margin-top: $spacing-md; }
+.mt-lg { margin-top: $spacing-lg; }
+.mb-sm { margin-bottom: $spacing-sm; }
+.mb-md { margin-bottom: $spacing-md; }
+.mb-lg { margin-bottom: $spacing-lg; }
+
+// 弹性布局
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-sm { gap: $spacing-sm; }
+.gap-md { gap: $spacing-md; }
+
+// =============================================
+// 响应式
+// =============================================
+
+@media screen and (max-width: $breakpoint-md) {
+  .page-container {
+    padding: $spacing-md;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-md;
+
+    .page-actions {
+      width: 100%;
+    }
+  }
+
+  .filter-container {
+    .el-form-item {
+      margin-bottom: $spacing-md;
+      margin-right: 0;
+    }
+  }
+}
