@@ -1,0 +1,22 @@
+# Bandit configuration file
+
+# Tests to exclude
+skips:
+  - B101  # assert_used
+  - B311  # random
+  - B605  # start_process_with_a_shell
+
+# Files to exclude
+exclude_dirs:
+  - ".*"
+  - "tests"
+  - "node_modules"
+  - "web"
+  - "mobile"
+  - "__pycache__"
+
+# Aggressiveness level (1=LOW, 2=MEDIUM, 3=HIGH)
+level: 2
+
+# Confidence level (1=LOW, 2=MEDIUM, 3=HIGH)
+confidence: 2
