@@ -1,6 +1,6 @@
 """
 导出服务
-支持导出抽凭结果、工作底稿等到Excel/PDF
+支持导出抽凭结果、工作底稿等到 Excel/PDF
 """
 import io
 import os
@@ -13,7 +13,7 @@ from app.core.config import settings
 
 
 class ExcelExporter:
-    """Excel导出器"""
+    """Excel 导出器"""
 
     def __init__(self):
         try:
@@ -40,18 +40,18 @@ class ExcelExporter:
         include_details: bool = True
     ) -> bytes:
         """
-        导出抽凭结果到Excel
+        导出抽凭结果到 Excel
 
         Args:
-            project_id: 项目ID
-            rule_id: 规则ID（可选，不指定则导出全部）
+            project_id: 项目 ID
+            rule_id: 规则 ID（可选，不指定则导出全部）
             include_details: 是否包含详细信息
 
         Returns:
-            Excel文件字节
+            Excel 文件字节
         """
         if not self.available:
-            raise RuntimeError("请安装pandas和openpyxl: pip install pandas openpyxl")
+            raise RuntimeError("请安装 pandas 和 openpyxl: pip install pandas openpyxl")
 
         # 查询数据
         with get_db_cursor() as cursor:
@@ -93,7 +93,7 @@ class ExcelExporter:
             cursor.execute(query, params)
             rows = cursor.fetchall()
 
-        # 创建DataFrame
+        # 创建 DataFrame
         columns = [
             "凭证编号", "凭证日期", "金额", "科目代码",
             "科目名称", "摘要", "交易对手", "风险分数",
@@ -118,7 +118,7 @@ class ExcelExporter:
 
         df = self.pd.DataFrame(data)
 
-        # 导出到Excel
+        # 导出到 Excel
         output = io.BytesIO()
 
         with self.pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -183,17 +183,17 @@ class ExcelExporter:
         filters: Optional[Dict[str, Any]] = None
     ) -> bytes:
         """
-        导出凭证列表到Excel
+        导出凭证列表到 Excel
 
         Args:
-            project_id: 项目ID
+            project_id: 项目 ID
             filters: 筛选条件
 
         Returns:
-            Excel文件字节
+            Excel 文件字节
         """
         if not self.available:
-            raise RuntimeError("请安装pandas和openpyxl: pip install pandas openpyxl")
+            raise RuntimeError("请安装 pandas 和 openpyxl: pip install pandas openpyxl")
 
         # 查询数据
         with get_db_cursor() as cursor:
@@ -224,7 +224,7 @@ class ExcelExporter:
             cursor.execute(query, params)
             rows = cursor.fetchall()
 
-        # 创建DataFrame
+        # 创建 DataFrame
         data = []
         for row in rows:
             data.append({
@@ -240,7 +240,7 @@ class ExcelExporter:
 
         df = self.pd.DataFrame(data)
 
-        # 导出到Excel
+        # 导出到 Excel
         output = io.BytesIO()
         df.to_excel(output, index=False, sheet_name='凭证列表')
         output.seek(0)
@@ -255,13 +255,13 @@ class ExcelExporter:
         导出项目汇总报告
 
         Args:
-            project_id: 项目ID
+            project_id: 项目 ID
 
         Returns:
-            Excel文件字节
+            Excel 文件字节
         """
         if not self.available:
-            raise RuntimeError("请安装pandas和openpyxl: pip install pandas openpyxl")
+            raise RuntimeError("请安装 pandas 和 openpyxl: pip install pandas openpyxl")
 
         output = io.BytesIO()
 
@@ -358,7 +358,7 @@ class ExcelExporter:
 
 
 class PDFExporter:
-    """PDF导出器"""
+    """PDF 导出器"""
 
     def __init__(self):
         try:
@@ -381,8 +381,25 @@ class PDFExporter:
 
             # 尝试注册中文字体
             try:
-                pdfmetrics.registerFont(TTFont('SimHei', 'simhei.ttf'))
-                self.chinese_font = 'SimHei'
+                # 尝试常见中文字体路径
+                import os
+                font_paths = [
+                    'C:/Windows/Fonts/simhei.ttf',  # Windows 黑体
+                    'C:/Windows/Fonts/simsun.ttc',  # Windows 宋体
+                    'C:/Windows/Fonts/msyh.ttc',    # Windows 微软雅黑
+                    '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',  # Linux 文泉驿
+                    '/System/Library/Fonts/PingFang.ttc',  # macOS 苹方
+                ]
+                for font_path in font_paths:
+                    try:
+                        if os.path.exists(font_path):
+                            pdfmetrics.registerFont(TTFont('Chinese', font_path))
+                            self.chinese_font = 'Chinese'
+                            break
+                    except:
+                        continue
+                else:
+                    self.chinese_font = None
             except:
                 self.chinese_font = None
 
@@ -391,21 +408,21 @@ class PDFExporter:
 
     def export_working_paper(
         self,
-        project_id: str,
-        title: str = "审计抽凭工作底稿"
+        paper: Dict[str, Any],
+        project_info: Dict[str, Any] = None
     ) -> bytes:
         """
-        导出工作底稿到PDF
+        导出工作底稿到 PDF
 
         Args:
-            project_id: 项目ID
-            title: 底稿标题
+            paper: 底稿数据（包含 title, sections, ai_description）
+            project_info: 项目信息
 
         Returns:
-            PDF文件字节
+            PDF 文件字节
         """
         if not self.available:
-            raise RuntimeError("请安装reportlab: pip install reportlab")
+            raise RuntimeError("请安装 reportlab: pip install reportlab")
 
         output = io.BytesIO()
 
@@ -417,24 +434,24 @@ class PDFExporter:
         if self.chinese_font:
             title_style = styles['Heading1']
             title_style.fontName = self.chinese_font
+            normal_style = styles['Normal']
+            normal_style.fontName = self.chinese_font
+            heading2_style = styles['Heading2']
+            heading2_style.fontName = self.chinese_font
+        else:
+            normal_style = styles['Normal']
+            heading2_style = styles['Heading2']
 
         # 标题
+        title = paper.get('title', '工作底稿')
         elements.append(self.Paragraph(title, styles['Heading1']))
-        elements.append(self.Spacer(1, 20))
+        elements.append(self.Spacer(1, 10))
 
         # 项目信息
-        with get_db_cursor() as cursor:
-            cursor.execute(
-                "SELECT name, description, created_at FROM projects WHERE id = ?",
-                [project_id]
-            )
-            project = cursor.fetchone()
-
-        if project:
+        if project_info:
             info_data = [
-                ["项目名称", project[0]],
-                ["项目描述", project[1] or ""],
-                ["创建时间", str(project[2])]
+                ["项目名称", project_info.get('name', '')],
+                ["底稿类型", paper.get('paper_type', '')],
             ]
 
             info_table = self.Table(info_data, colWidths=[100, 300])
@@ -445,36 +462,41 @@ class PDFExporter:
                 ('ALIGN', (1, 0), (1, -1), 'LEFT'),
             ]))
             elements.append(info_table)
-            elements.append(self.Spacer(1, 20))
+            elements.append(self.Spacer(1, 15))
 
-        # 抽凭汇总
-        with get_db_cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT COUNT(*) as total,
-                       (SELECT COUNT(*) FROM vouchers WHERE project_id = ?) as population
-                FROM samples
-                WHERE project_id = ?
-                """,
-                [project_id, project_id]
-            )
-            stats = cursor.fetchone()
+        # 底稿章节内容
+        sections = paper.get('sections', [])
+        for section in sections:
+            section_title = section.get('title', '')
+            section_content = section.get('content', '')
 
-        summary_data = [
-            ["凭证总体", str(stats[1])],
-            ["抽样数量", str(stats[0])],
-            ["抽样比例", f"{stats[0]/stats[1]*100:.1f}%" if stats[1] > 0 else "N/A"]
-        ]
+            # 章节标题
+            elements.append(self.Paragraph(section_title, heading2_style))
+            elements.append(self.Spacer(1, 5))
 
-        summary_table = self.Table(summary_data, colWidths=[100, 100])
-        summary_table.setStyle(self.TableStyle([
-            ('FONTNAME', (0, 0), (-1, -1), self.chinese_font or 'Helvetica'),
-            ('GRID', (0, 0), (-1, -1), 1, self.colors.black),
-        ]))
-        elements.append(self.Paragraph("抽样概况", styles['Heading2']))
-        elements.append(summary_table)
+            # 章节内容（处理多行文本）
+            if section_content:
+                # 将内容按换行符分割，每段作为一个 Paragraph
+                paragraphs = section_content.split('\n')
+                for para in paragraphs:
+                    if para.strip():
+                        elements.append(self.Paragraph(para.strip(), normal_style))
+                        elements.append(self.Spacer(1, 2))
+                elements.append(self.Spacer(1, 10))
 
-        # 构建PDF
+        # AI 描述
+        ai_description = paper.get('ai_description', '')
+        if ai_description:
+            elements.append(self.Paragraph("AI 审计说明", heading2_style))
+            elements.append(self.Spacer(1, 5))
+
+            ai_paragraphs = ai_description.split('\n')
+            for para in ai_paragraphs:
+                if para.strip():
+                    elements.append(self.Paragraph(para.strip(), normal_style))
+                    elements.append(self.Spacer(1, 2))
+
+        # 构建 PDF
         doc.build(elements)
         output.seek(0)
 
@@ -497,7 +519,7 @@ def save_export_file(
     Args:
         file_data: 文件数据
         filename: 文件名
-        project_id: 项目ID
+        project_id: 项目 ID
 
     Returns:
         文件路径

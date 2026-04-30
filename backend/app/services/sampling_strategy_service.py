@@ -212,10 +212,11 @@ class SamplingStrategyRecommender:
             )
             material_count = cursor.fetchone()[0] or 0
 
-        # 基础样本量
-        base_sample = min(population_count, max(30, int(population_count * 0.3)))
+        # 基础样本量：高风险科目抽样30%，但不低于总体规模的一定比例
+        base_sample = int(population_count * 0.3)
+        base_sample = max(1, min(base_sample, population_count))
 
-        # 加上金额重要的凭证
+        # 加上金额重要的凭证，但不超过总体规模
         total_sample = min(population_count, base_sample + material_count)
 
         return SamplingStrategy(
@@ -312,10 +313,11 @@ class SamplingStrategyRecommender:
         # 使用标准统计公式计算样本量
         n = self._calculate_sample_size(population_count, z, p, e)
 
-        # 低风险科目抽样比例限制在10%-15%
-        min_sample = max(10, int(population_count * 0.10))
-        max_sample = max(min_sample, int(population_count * 0.15))
-        n = max(min_sample, min(n, max_sample))
+        # 低风险科目抽样比例限制在10%-15%，但不能超过总体规模
+        min_sample = max(1, int(population_count * 0.10))
+        max_sample = min(population_count, int(population_count * 0.15))
+        max_sample = max(min_sample, max_sample)  # 确保max_sample >= min_sample
+        n = min(population_count, max(min_sample, min(n, max_sample)))
 
         return SamplingStrategy(
             method=SamplingMethod.RANDOM,
@@ -354,7 +356,12 @@ class SamplingStrategyRecommender:
         # 有限总体校正
         n_adjusted = n * population_size / (population_size + n - 1)
 
-        return max(10, int(round(n_adjusted)))
+        # 样本量限制：最小10笔，但不超过总体规模
+        sample_size = int(round(n_adjusted))
+        sample_size = min(sample_size, population_size)  # 不能超过总体规模
+        sample_size = max(1, sample_size)  # 至少1笔
+
+        return sample_size
 
     def _create_amount_strata(
         self,
@@ -476,7 +483,33 @@ class SamplingStrategyRecommender:
         z = self.z_values.get(confidence_level, 1.96)
         sample_size = self._calculate_sample_size(population_size, z, expected_error, tolerable_error)
 
-        # 生成不同参数下的样本量对比
+        # 扩展的Z值表（用于生成平滑曲线）
+        extended_z_values = {
+            0.80: 1.282,
+            0.85: 1.440,
+            0.90: 1.645,
+            0.91: 1.695,
+            0.92: 1.751,
+            0.93: 1.812,
+            0.94: 1.881,
+            0.95: 1.960,
+            0.96: 2.054,
+            0.97: 2.170,
+            0.98: 2.326,
+            0.99: 2.576
+        }
+
+        # 生成样本量-置信度曲线数据（固定可容忍误差和预期偏差率）
+        curve_data = []
+        for cl in [0.80, 0.85, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99]:
+            z_val = extended_z_values.get(cl, 1.96)
+            n = self._calculate_sample_size(population_size, z_val, expected_error, tolerable_error)
+            curve_data.append({
+                "confidence_level": cl,
+                "sample_size": n
+            })
+
+        # 生成不同参数下的样本量对比表
         comparisons = []
         for cl in [0.90, 0.95, 0.99]:
             for te in [0.03, 0.05, 0.08, 0.10]:
@@ -502,7 +535,291 @@ class SamplingStrategyRecommender:
                 "z_value": z
             },
             "sampling_rate": sample_size / population_size if population_size > 0 else 0,
+            "curve_data": curve_data,
             "comparisons": comparisons
+        }
+
+    def recommend_layered_sampling(
+        self,
+        project_id: str,
+        high_ratio: float = 1.0,
+        medium_ratio: float = 0.3,
+        low_ratio: float = 0.05
+    ) -> Dict[str, Any]:
+        """
+        分层抽样推荐
+
+        根据风险等级分层：
+        - 高风险：100%检查
+        - 中风险：30%抽样
+        - 低风险：5%抽样
+
+        Args:
+            project_id: 项目ID
+            high_ratio: 高风险抽样比例
+            medium_ratio: 中风险抽样比例
+            low_ratio: 低风险抽样比例
+
+        Returns:
+            Dict: 分层抽样建议
+        """
+        from app.services.voucher_risk_service import voucher_risk_service
+
+        with get_db_cursor() as cursor:
+            # 按风险等级统计凭证数量
+            cursor.execute(
+                """
+                SELECT risk_level, COUNT(*), COALESCE(SUM(amount), 0)
+                FROM vouchers
+                WHERE project_id = ?
+                GROUP BY risk_level
+                """,
+                [project_id]
+            )
+            rows = cursor.fetchall()
+
+        layers = {
+            "high": {"level": "high", "count": 0, "amount": 0, "ratio": high_ratio, "sample_size": 0},
+            "medium": {"level": "medium", "count": 0, "amount": 0, "ratio": medium_ratio, "sample_size": 0},
+            "low": {"level": "low", "count": 0, "amount": 0, "ratio": low_ratio, "sample_size": 0}
+        }
+
+        for row in rows:
+            level = row[0] or "low"
+            if level in layers:
+                layers[level]["count"] = row[1] or 0
+                layers[level]["amount"] = float(row[2]) if row[2] else 0
+
+        # 计算各层样本量
+        total_sample = 0
+        for level in layers:
+            count = layers[level]["count"]
+            ratio = layers[level]["ratio"]
+            sample_size = max(1, int(count * ratio)) if count > 0 else 0
+            if ratio >= 1.0:  # 100%检查
+                sample_size = count
+            layers[level]["sample_size"] = sample_size
+            total_sample += sample_size
+
+        # 获取总体统计
+        total_count = sum(l["count"] for l in layers.values())
+        total_amount = sum(l["amount"] for l in layers.values())
+
+        # 生成建议说明
+        recommendations = []
+        if layers["high"]["count"] > 0:
+            recommendations.append(f"高风险凭证{layers['high']['count']}笔，建议100%检查")
+        if layers["medium"]["count"] > 0:
+            recommendations.append(f"中风险凭证{layers['medium']['count']}笔，建议抽取{layers['medium']['sample_size']}笔（{medium_ratio*100:.0f}%）")
+        if layers["low"]["count"] > 0:
+            recommendations.append(f"低风险凭证{layers['low']['count']}笔，建议抽取{layers['low']['sample_size']}笔（{low_ratio*100:.0f}%）")
+
+        return {
+            "layers": list(layers.values()),
+            "total_population": total_count,
+            "total_amount": total_amount,
+            "total_sample_size": total_sample,
+            "overall_sampling_rate": round(total_sample / total_count * 100, 2) if total_count > 0 else 0,
+            "recommendation": "；".join(recommendations) + f"。合计抽样{total_sample}笔。"
+        }
+
+    def recommend_key_focus_sampling(
+        self,
+        project_id: str,
+        risk_tag_codes: List[str] = None
+    ) -> Dict[str, Any]:
+        """
+        重点关注抽样推荐
+
+        根据风险标签圈定样本：
+        - 关联方交易
+        - 节假日交易
+        - 大额交易
+        - 新客户交易
+        等
+
+        Args:
+            project_id: 项目ID
+            risk_tag_codes: 风险标签代码列表，为空则使用默认高风险标签
+
+        Returns:
+            Dict: 重点关注抽样建议
+        """
+        if not risk_tag_codes:
+            # 默认高风险标签
+            risk_tag_codes = [
+                "SUPER_LARGE_AMOUNT",
+                "RELATED_PARTY",
+                "WEEKEND_TRANSACTION",
+                "YEAR_END_TRANSACTION",
+                "MISSING_INVOICE"
+            ]
+
+        with get_db_cursor() as cursor:
+            placeholders = ",".join(["?" for _ in risk_tag_codes])
+
+            # 获取有指定标签的凭证
+            cursor.execute(
+                f"""
+                SELECT DISTINCT v.id, v.voucher_no, v.voucher_date, v.amount,
+                       v.subject_code, v.subject_name, v.risk_score, v.risk_level
+                FROM vouchers v
+                JOIN voucher_risk_tags t ON v.id = t.voucher_id
+                WHERE v.project_id = ? AND t.tag_code IN ({placeholders})
+                ORDER BY v.risk_score DESC, v.amount DESC
+                """,
+                [project_id] + risk_tag_codes
+            )
+            rows = cursor.fetchall()
+
+            # 统计各标签数量
+            cursor.execute(
+                f"""
+                SELECT t.tag_code, t.tag_name, COUNT(DISTINCT t.voucher_id) as count
+                FROM voucher_risk_tags t
+                JOIN vouchers v ON t.voucher_id = v.id
+                WHERE v.project_id = ? AND t.tag_code IN ({placeholders})
+                GROUP BY t.tag_code, t.tag_name
+                ORDER BY count DESC
+                """,
+                [project_id] + risk_tag_codes
+            )
+            tag_stats = [
+                {"tag_code": row[0], "tag_name": row[1], "count": row[2]}
+                for row in cursor.fetchall()
+            ]
+
+        samples = [
+            {
+                "voucher_id": row[0],
+                "voucher_no": row[1],
+                "voucher_date": str(row[2]) if row[2] else None,
+                "amount": float(row[3]) if row[3] else 0,
+                "subject_code": row[4],
+                "subject_name": row[5],
+                "risk_score": float(row[6]) if row[6] else 0,
+                "risk_level": row[7] or "low"
+            }
+            for row in rows
+        ]
+
+        # 去重（同一凭证可能有多个标签）
+        seen = set()
+        unique_samples = []
+        for s in samples:
+            if s["voucher_id"] not in seen:
+                seen.add(s["voucher_id"])
+                unique_samples.append(s)
+
+        return {
+            "focus_tags": risk_tag_codes,
+            "tag_statistics": tag_stats,
+            "sample_count": len(unique_samples),
+            "samples": unique_samples[:100],  # 最多返回100条
+            "recommendation": f"根据风险标签筛选，共{len(unique_samples)}笔凭证需要重点关注。建议对这些凭证进行详细审计。"
+        }
+
+    def integrate_with_mus(
+        self,
+        project_id: str,
+        subject_code: str = None,
+        tolerable_misstatement: float = None,
+        confidence_level: float = 0.95
+    ) -> Dict[str, Any]:
+        """
+        与MUS抽样集成
+
+        结合风险画像和货币单位抽样：
+        - 高风险凭证：100%检查
+        - 其余：MUS抽样
+
+        Args:
+            project_id: 项目ID
+            subject_code: 科目代码（可选）
+            tolerable_misstatement: 可容忍错报
+            confidence_level: 置信水平
+
+        Returns:
+            Dict: 集成抽样建议
+        """
+        with get_db_cursor() as cursor:
+            # 获取高风险凭证
+            sql = """
+                SELECT id, voucher_no, amount, risk_score, risk_level
+                FROM vouchers
+                WHERE project_id = ? AND risk_level = 'high'
+            """
+            params = [project_id]
+            if subject_code:
+                sql += " AND subject_code LIKE ?"
+                params.append(f"{subject_code}%")
+
+            cursor.execute(sql, params)
+            high_risk_rows = cursor.fetchall()
+
+            # 获取剩余凭证（用于MUS）
+            sql = """
+                SELECT id, voucher_no, amount, risk_score
+                FROM vouchers
+                WHERE project_id = ? AND (risk_level != 'high' OR risk_level IS NULL)
+            """
+            params = [project_id]
+            if subject_code:
+                sql += " AND subject_code LIKE ?"
+                params.append(f"{subject_code}%")
+
+            cursor.execute(sql, params)
+            mus_rows = cursor.fetchall()
+
+            # 获取总金额
+            sql = "SELECT COALESCE(SUM(amount), 0) FROM vouchers WHERE project_id = ?"
+            params = [project_id]
+            if subject_code:
+                sql += " AND subject_code LIKE ?"
+                params.append(f"{subject_code}%")
+
+            cursor.execute(sql, params)
+            total_amount = float(cursor.fetchone()[0]) or 1
+
+        # 高风险凭证列表
+        high_risk_samples = [
+            {
+                "voucher_id": row[0],
+                "voucher_no": row[1],
+                "amount": float(row[2]) if row[2] else 0,
+                "risk_score": float(row[3]) if row[3] else 0
+            }
+            for row in high_risk_rows
+        ]
+
+        # 计算MUS参数
+        if tolerable_misstatement is None:
+            tolerable_misstatement = total_amount * 0.01  # 默认1%作为可容忍错报
+
+        # 可靠性因子
+        reliability_factors = {
+            0.90: 2.31,
+            0.95: 3.00,
+            0.99: 4.61
+        }
+        rf = reliability_factors.get(confidence_level, 3.00)
+
+        # MUS抽样区间
+        mus_total = sum(float(row[2]) if row[2] else 0 for row in mus_rows)
+        sampling_interval = tolerable_misstatement / rf if rf > 0 else mus_total
+        mus_sample_size = int(mus_total / sampling_interval) if sampling_interval > 0 else 0
+
+        return {
+            "high_risk_samples": high_risk_samples,
+            "high_risk_count": len(high_risk_samples),
+            "high_risk_amount": sum(s["amount"] for s in high_risk_samples),
+            "mus_population": mus_total,
+            "mus_sampling_interval": round(sampling_interval, 2),
+            "mus_sample_size": max(1, mus_sample_size),
+            "total_sample_size": len(high_risk_samples) + max(1, mus_sample_size),
+            "tolerable_misstatement": tolerable_misstatement,
+            "confidence_level": confidence_level,
+            "recommendation": f"建议对{len(high_risk_samples)}笔高风险凭证进行100%检查，同时从剩余凭证中使用MUS方法抽取{max(1, mus_sample_size)}笔样本。"
         }
 
 

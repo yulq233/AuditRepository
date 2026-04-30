@@ -228,3 +228,35 @@ onMounted(() => {
   loadProjects()
 })
 </script>
+
+<style lang="scss" scoped>
+@import '@/styles/variables.scss';
+
+/* 覆盖页面容器边距，参考凭证管理页面 */
+.page-container {
+  padding: 24px !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.filter-container {
+  padding: $spacing-lg;
+}
+
+.pagination-container {
+  margin-top: $spacing-lg;
+}
+
+// 表格容器
+:deep(.el-table) {
+  .el-table__body-wrapper {
+    overflow-x: auto;
+  }
+
+  .el-table__cell .cell {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+</style>

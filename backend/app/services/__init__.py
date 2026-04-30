@@ -27,6 +27,10 @@ from app.services.risk_profile_service import (
     RiskProfileGenerator, RiskProfile, RiskLevel,
     risk_profile_generator
 )
+from app.services.ai_risk_service import (
+    AIRiskAnalyzer, AIRiskAssessment, VoucherAIRisk,
+    ai_risk_analyzer
+)
 from app.services.sampling_strategy_service import (
     SamplingStrategyRecommender, SamplingStrategy, SamplingMethod,
     sampling_strategy_recommender
@@ -106,6 +110,11 @@ __all__ = [
     "RiskProfile",
     "RiskLevel",
     "risk_profile_generator",
+    # AI风险分析服务
+    "AIRiskAnalyzer",
+    "AIRiskAssessment",
+    "VoucherAIRisk",
+    "ai_risk_analyzer",
     # 抽样策略服务
     "SamplingStrategyRecommender",
     "SamplingStrategy",

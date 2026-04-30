@@ -225,3 +225,22 @@ async def get_current_superuser(
             detail="权限不足"
         )
     return current_user
+
+
+async def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(
+        HTTPBearer(auto_error=False)
+    )
+) -> Optional[UserInDB]:
+    """获取当前用户（可选，无token时返回None）"""
+    if credentials is None:
+        return None
+
+    token = credentials.credentials
+    token_data = decode_token(token)
+
+    if token_data is None or token_data.user_id is None:
+        return None
+
+    user = get_user_by_id(token_data.user_id)
+    return user

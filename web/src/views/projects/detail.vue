@@ -200,12 +200,21 @@ const importVouchers = async () => {
 }
 
 onMounted(() => {
+  // 保存当前项目ID到localStorage，供其他模块使用
+  localStorage.setItem('currentProjectId', projectId)
   loadProject()
   loadVouchers()
 })
 </script>
 
 <style lang="scss" scoped>
+/* 覆盖页面容器边距，参考凭证管理页面 */
+.page-container {
+  padding: 24px !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
 .stat-card {
   text-align: center;
   padding: 20px;

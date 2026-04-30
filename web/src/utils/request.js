@@ -5,7 +5,7 @@ import router from '@/router'
 // 创建axios实例
 const request = axios.create({
   baseURL: '/api',
-  timeout: 30000
+  timeout: 120000  // 增加到120秒，支持AI识别等耗时操作
 })
 
 // 请求拦截器
@@ -31,6 +31,9 @@ request.interceptors.response.use(
     const { response } = error
 
     if (response) {
+      // 将详细信息附加到error对象，让调用方自己处理
+      error.detail = response.data?.detail
+
       switch (response.status) {
         case 401:
           ElMessage.error('登录已过期，请重新登录')
@@ -41,13 +44,17 @@ request.interceptors.response.use(
           ElMessage.error('没有权限访问')
           break
         case 404:
-          ElMessage.error('请求的资源不存在')
+          // 404错误不自动显示，让调用方自己处理
+          // 这样可以根据具体业务场景显示更友好的提示
           break
         case 500:
           ElMessage.error('服务器错误')
           break
         default:
-          ElMessage.error(response.data?.detail || '请求失败')
+          // 其他错误显示后端返回的详细信息
+          if (response.data?.detail) {
+            ElMessage.error(response.data.detail)
+          }
       }
     } else {
       ElMessage.error('网络连接失败')

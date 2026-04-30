@@ -1,7 +1,7 @@
 """
 API路由模块
 """
-from app.api import projects, vouchers, sampling, ai, auth, files, tasks, papers, audit_trail
+from app.api import projects, vouchers, sampling, ai, auth, files, tasks, papers, audit_trail, crawler, compliance, risk
 
 __all__ = [
     "projects",
@@ -12,5 +12,8 @@ __all__ = [
     "files",
     "tasks",
     "papers",
-    "audit_trail"
+    "audit_trail",
+    "crawler",
+    "compliance",
+    "risk"
 ]

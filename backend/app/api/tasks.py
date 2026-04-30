@@ -6,9 +6,12 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 import json
+import logging
 
 from app.core.database import get_db_cursor
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, UserInDB
+
+logger = logging.getLogger(__name__)
 from app.services.task_service import (
     task_manager, TaskStatus, TaskPriority, AuditTask, TeamMember
 )
@@ -59,7 +62,7 @@ class AutoAssignRequest(BaseModel):
 async def create_task(
     project_id: str,
     task: TaskCreate,
-    current_user = Depends(get_current_user)
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """创建任务"""
     # 验证项目存在
@@ -86,14 +89,16 @@ async def create_task(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"创建失败: {str(e)}")
+        logger.error(f"任务创建失败: {str(e)}")
+        raise HTTPException(status_code=500, detail="任务创建失败，请稍后重试")
 
 
 @router.get("/projects/{project_id}/tasks")
 async def list_tasks(
     project_id: str,
     status: Optional[str] = Query(None, description="按状态筛选"),
-    assignee_id: Optional[str] = Query(None, description="按被分派人筛选")
+    assignee_id: Optional[str] = Query(None, description="按被分派人筛选"),
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """获取任务列表"""
     # 验证项目存在
@@ -130,7 +135,11 @@ async def list_tasks(
 
 
 @router.get("/projects/{project_id}/tasks/{task_id}")
-async def get_task(project_id: str, task_id: str):
+async def get_task(
+    project_id: str,
+    task_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
     """获取任务详情"""
     task = task_manager.get_task(task_id)
 
@@ -161,7 +170,7 @@ async def update_task_status(
     project_id: str,
     task_id: str,
     update: TaskStatusUpdate,
-    current_user = Depends(get_current_user)
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """更新任务状态"""
     task = task_manager.get_task(task_id)
@@ -183,7 +192,8 @@ async def update_task_status(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
+        logger.error(f"任务状态更新失败: {str(e)}")
+        raise HTTPException(status_code=500, detail="任务状态更新失败，请稍后重试")
 
 
 @router.post("/projects/{project_id}/tasks/{task_id}/notes")
@@ -191,7 +201,7 @@ async def add_task_note(
     project_id: str,
     task_id: str,
     note: TaskNoteCreate,
-    current_user = Depends(get_current_user)
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """添加任务备注"""
     task = task_manager.get_task(task_id)
@@ -213,7 +223,7 @@ async def add_task_note(
 async def auto_assign_tasks(
     project_id: str,
     request: AutoAssignRequest,
-    current_user = Depends(get_current_user)
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """自动分派任务"""
     # 验证项目存在
@@ -250,11 +260,15 @@ async def auto_assign_tasks(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"分派失败: {str(e)}")
+        logger.error(f"任务自动分派失败: {str(e)}")
+        raise HTTPException(status_code=500, detail="任务自动分派失败，请稍后重试")
 
 
 @router.get("/projects/{project_id}/tasks/progress")
-async def get_task_progress(project_id: str):
+async def get_task_progress(
+    project_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
     """获取任务进度"""
     # 验证项目存在
     with get_db_cursor() as cursor:
@@ -278,7 +292,8 @@ async def get_task_progress(project_id: str):
 @router.post("/projects/{project_id}/team-members", status_code=201)
 async def add_team_member(
     project_id: str,
-    member: TeamMemberCreate
+    member: TeamMemberCreate,
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """添加团队成员"""
     # 验证项目存在
@@ -301,7 +316,10 @@ async def add_team_member(
 
 
 @router.get("/projects/{project_id}/team-members")
-async def list_team_members(project_id: str):
+async def list_team_members(
+    project_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
     """获取团队成员列表"""
     members = task_manager.get_team_members(project_id)
 
@@ -323,7 +341,7 @@ async def list_team_members(project_id: str):
 async def delete_task(
     project_id: str,
     task_id: str,
-    current_user = Depends(get_current_user)
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """删除任务"""
     task = task_manager.get_task(task_id)

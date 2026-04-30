@@ -1,13 +1,15 @@
 """
 项目管理API
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 import uuid
 
 from app.core.database import get_db_cursor, get_db
+from app.core.auth import get_current_user, UserInDB
+from app.services.risk_profile_service import risk_profile_generator
 
 router = APIRouter()
 
@@ -50,7 +52,8 @@ async def list_projects(
     status: Optional[str] = Query(None, description="按状态筛选"),
     keyword: Optional[str] = Query(None, description="关键词搜索"),
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量")
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """获取项目列表"""
     offset = (page - 1) * page_size
@@ -103,7 +106,10 @@ async def list_projects(
 
 
 @router.post("", response_model=ProjectResponse, status_code=201)
-async def create_project(project: ProjectCreate):
+async def create_project(
+    project: ProjectCreate,
+    current_user: UserInDB = Depends(get_current_user)
+):
     """创建项目"""
     project_id = str(uuid.uuid4())
     now = datetime.now()
@@ -129,7 +135,10 @@ async def create_project(project: ProjectCreate):
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
-async def get_project(project_id: str):
+async def get_project(
+    project_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
     """获取项目详情"""
     with get_db_cursor() as cursor:
         cursor.execute(
@@ -156,7 +165,11 @@ async def get_project(project_id: str):
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
-async def update_project(project_id: str, project: ProjectUpdate):
+async def update_project(
+    project_id: str,
+    project: ProjectUpdate,
+    current_user: UserInDB = Depends(get_current_user)
+):
     """更新项目"""
     now = datetime.now()
 
@@ -217,7 +230,10 @@ async def update_project(project_id: str, project: ProjectUpdate):
 
 
 @router.delete("/{project_id}", status_code=204)
-async def delete_project(project_id: str):
+async def delete_project(
+    project_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
     """删除项目"""
     with get_db_cursor() as cursor:
         # 检查项目是否存在
@@ -225,15 +241,137 @@ async def delete_project(project_id: str):
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="项目不存在")
 
-        # 删除关联数据
+        # 获取所有凭证ID，用于删除凭证附件
+        cursor.execute("SELECT id FROM vouchers WHERE project_id = ?", [project_id])
+        voucher_ids = [row[0] for row in cursor.fetchall()]
+
+        # 删除凭证相关数据
+        for vid in voucher_ids:
+            cursor.execute("DELETE FROM voucher_attachments WHERE voucher_id = ?", [vid])
+            cursor.execute("DELETE FROM voucher_ocr_results WHERE voucher_id = ?", [vid])
+            cursor.execute("DELETE FROM voucher_categories WHERE voucher_id = ?", [vid])
+
+        # 删除抽样相关数据
         cursor.execute("DELETE FROM samples WHERE project_id = ?", [project_id])
-        cursor.execute("DELETE FROM vouchers WHERE project_id = ?", [project_id])
+        cursor.execute("DELETE FROM sampling_records WHERE project_id = ?", [project_id])
         cursor.execute("DELETE FROM sampling_rules WHERE project_id = ?", [project_id])
+
+        # 删除其他关联数据
         cursor.execute("DELETE FROM risk_profiles WHERE project_id = ?", [project_id])
         cursor.execute("DELETE FROM audit_trail WHERE project_id = ?", [project_id])
+        cursor.execute("DELETE FROM audit_tasks WHERE project_id = ?", [project_id])
+        cursor.execute("DELETE FROM working_papers WHERE project_id = ?", [project_id])
+        cursor.execute("DELETE FROM compliance_alerts WHERE project_id = ?", [project_id])
+        cursor.execute("DELETE FROM matching_results WHERE project_id = ?", [project_id])
+        cursor.execute("DELETE FROM crawler_tasks WHERE project_id = ?", [project_id])
+
+        # 删除凭证
+        cursor.execute("DELETE FROM vouchers WHERE project_id = ?", [project_id])
 
         # 删除项目
         cursor.execute("DELETE FROM projects WHERE id = ?", [project_id])
         get_db().commit()
 
         return None
+
+
+# ==================== 风险画像API ====================
+
+class RiskFactorResponse(BaseModel):
+    """风险因素响应"""
+    name: str
+    weight: float
+    score: float
+    description: str
+
+
+class RiskProfileResponse(BaseModel):
+    """风险画像响应"""
+    id: str
+    project_id: str
+    subject_code: str
+    subject_name: str
+    risk_level: str
+    risk_score: float
+    risk_factors: List[RiskFactorResponse]
+    material_amount: float
+    anomaly_score: float
+    recommendation: str
+    created_at: datetime
+
+
+@router.post("/{project_id}/risk-profile/generate", response_model=List[RiskProfileResponse])
+async def generate_risk_profiles(
+    project_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    """生成项目风险画像"""
+    # 检查项目是否存在
+    with get_db_cursor() as cursor:
+        cursor.execute("SELECT id FROM projects WHERE id = ?", [project_id])
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="项目不存在")
+
+    # 生成风险画像
+    profiles = risk_profile_generator.generate_project_profiles(project_id)
+
+    return [
+        RiskProfileResponse(
+            id=p.id,
+            project_id=p.project_id,
+            subject_code=p.subject_code,
+            subject_name=p.subject_name,
+            risk_level=p.risk_level.value,
+            risk_score=p.risk_score,
+            risk_factors=[
+                RiskFactorResponse(
+                    name=f.name,
+                    weight=f.weight,
+                    score=f.score,
+                    description=f.description
+                ) for f in p.risk_factors
+            ],
+            material_amount=p.material_amount,
+            anomaly_score=p.anomaly_score,
+            recommendation=p.recommendation,
+            created_at=p.created_at
+        ) for p in profiles
+    ]
+
+
+@router.get("/{project_id}/risk-profile", response_model=List[RiskProfileResponse])
+async def get_risk_profiles(
+    project_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
+    """获取项目风险画像列表"""
+    # 检查项目是否存在
+    with get_db_cursor() as cursor:
+        cursor.execute("SELECT id FROM projects WHERE id = ?", [project_id])
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="项目不存在")
+
+    profiles = risk_profile_generator.get_project_profiles(project_id)
+
+    return [
+        RiskProfileResponse(
+            id=p.id,
+            project_id=p.project_id,
+            subject_code=p.subject_code,
+            subject_name=p.subject_name,
+            risk_level=p.risk_level.value,
+            risk_score=p.risk_score,
+            risk_factors=[
+                RiskFactorResponse(
+                    name=f.name,
+                    weight=f.weight,
+                    score=f.score,
+                    description=f.description
+                ) for f in p.risk_factors
+            ],
+            material_amount=p.material_amount,
+            anomaly_score=p.anomaly_score,
+            recommendation=p.recommendation,
+            created_at=p.created_at
+        ) for p in profiles
+    ]

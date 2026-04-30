@@ -663,22 +663,26 @@ class ComplianceChecker:
 
     def _save_alert(self, alert: ComplianceAlert):
         """保存预警"""
+        import json
         with get_db_cursor() as cursor:
             cursor.execute(
                 """
                 INSERT INTO compliance_alerts
-                (id, project_id, voucher_id, rule_name, rule_description,
-                 severity, alert_message, is_resolved, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, project_id, voucher_id, voucher_no, rule_code, rule_name, rule_description,
+                 severity, alert_message, details, is_resolved, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     alert.id,
                     alert.project_id,
                     alert.voucher_id,
+                    alert.voucher_no,
+                    alert.rule_code,
                     alert.rule_name,
                     alert.rule_description,
                     alert.severity.value,
                     alert.alert_message,
+                    json.dumps(alert.details),
                     alert.is_resolved,
                     alert.created_at
                 ]
@@ -692,6 +696,7 @@ class ComplianceChecker:
         resolved: bool = None
     ) -> List[ComplianceAlert]:
         """获取预警列表"""
+        import json
         with get_db_cursor() as cursor:
             conditions = ["project_id = ?"]
             params = [project_id]
@@ -708,8 +713,8 @@ class ComplianceChecker:
 
             cursor.execute(
                 f"""
-                SELECT id, project_id, voucher_id, rule_name, rule_description,
-                       severity, alert_message, is_resolved, resolved_at, created_at
+                SELECT id, project_id, voucher_id, voucher_no, rule_code, rule_name, rule_description,
+                       severity, alert_message, details, is_resolved, resolved_at, created_at
                 FROM compliance_alerts
                 WHERE {where_clause}
                 ORDER BY created_at DESC
@@ -723,16 +728,16 @@ class ComplianceChecker:
                     id=row[0],
                     project_id=row[1],
                     voucher_id=row[2],
-                    voucher_no="",
-                    rule_code="",
-                    rule_name=row[3],
-                    rule_description=row[4],
-                    severity=ComplianceSeverity(row[5]),
-                    alert_message=row[6],
-                    details={},
-                    is_resolved=bool(row[7]),
-                    resolved_at=row[8],
-                    created_at=row[9]
+                    voucher_no=row[3] or "",
+                    rule_code=row[4] or "",
+                    rule_name=row[5],
+                    rule_description=row[6],
+                    severity=ComplianceSeverity(row[7]),
+                    alert_message=row[8],
+                    details=json.loads(row[9]) if row[9] else {},
+                    is_resolved=bool(row[10]),
+                    resolved_at=row[11],
+                    created_at=row[12]
                 )
                 for row in rows
             ]

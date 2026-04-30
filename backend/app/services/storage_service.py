@@ -221,21 +221,126 @@ class FileStorageService:
         """计算文件哈希"""
         return hashlib.sha256(file_data).hexdigest()
 
+    # 文件Magic Number签名（用于验证文件真实类型）
+    MAGIC_SIGNATURES = {
+        b'\xFF\xD8\xFF': 'jpeg',
+        b'\x89PNG\r\n\x1a\n': 'png',
+        b'GIF87a': 'gif',
+        b'GIF89a': 'gif',
+        b'BM': 'bmp',
+        b'%PDF': 'pdf',
+        b'PK\x03\x04': 'zip',  # xlsx, docx等实际上是zip格式
+        b'\xD0\xCF\x11\xE0': 'ms_office',  # xls, doc等旧格式
+    }
+
+    # 扩展名与MIME类型映射
+    EXTENSION_MIME = {
+        '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.bmp': 'image/bmp',
+        '.pdf': 'application/pdf',
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        '.xls': 'application/vnd.ms-excel',
+        '.csv': 'text/csv',
+        '.html': 'text/html',
+        '.htm': 'text/html',
+    }
+
+    def _detect_file_type(self, file_data: bytes) -> str:
+        """
+        通过Magic Number检测文件真实类型
+
+        Args:
+            file_data: 文件数据（前几字节即可）
+
+        Returns:
+            str: 检测到的文件类型，未知返回 'unknown'
+        """
+        if len(file_data) < 8:
+            return 'unknown'
+
+        for signature, file_type in self.MAGIC_SIGNATURES.items():
+            if file_data.startswith(signature):
+                return file_type
+
+        return 'unknown'
+
+    def _validate_extension_match(self, ext: str, file_type: str) -> bool:
+        """
+        验证扩展名与文件类型是否匹配
+
+        Args:
+            ext: 文件扩展名
+            file_type: 检测到的文件类型
+
+        Returns:
+            bool: 是否匹配
+        """
+        # Office文件（xlsx, xls）都是zip格式
+        if file_type == 'zip':
+            return ext in ['.xlsx', '.xls', '.zip']
+
+        if file_type == 'ms_office':
+            return ext in ['.xls', '.doc', '.ppt']
+
+        # 图片类型映射
+        image_map = {
+            'jpeg': ['.jpg', '.jpeg'],
+            'png': ['.png'],
+            'gif': ['.gif'],
+            'bmp': ['.bmp'],
+        }
+
+        if file_type in image_map:
+            return ext in image_map[file_type]
+
+        # PDF
+        if file_type == 'pdf':
+            return ext == '.pdf'
+
+        # CSV和HTML无法通过Magic Number准确检测，允许通过
+        if ext in ['.csv', '.html', '.htm']:
+            return True
+
+        return False
+
     def validate_file(self, filename: str, file_data: bytes) -> Tuple[bool, str]:
         """
-        验证文件
+        验证文件安全性
+
+        检查项：
+        1. 扩展名是否在允许列表
+        2. 文件大小是否超限
+        3. 文件内容是否与扩展名匹配（Magic Number检测）
+        4. 文件名是否包含危险字符
+
         返回: (是否有效, 错误信息)
         """
-        # 检查扩展名
+        import re
+
+        # 1. 检查文件名是否包含危险字符
+        if re.search(r'[<>:"|?*\x00-\x1f]', filename):
+            return False, "文件名包含非法字符"
+
+        # 2. 检查扩展名
         ext = os.path.splitext(filename)[1].lower()
         if ext not in settings.ALLOWED_EXTENSIONS:
             return False, f"不支持的文件类型: {ext}"
 
-        # 检查文件大小
+        # 3. 检查文件大小
         if len(file_data) > settings.MAX_UPLOAD_SIZE:
             size_mb = len(file_data) / (1024 * 1024)
             max_mb = settings.MAX_UPLOAD_SIZE / (1024 * 1024)
             return False, f"文件大小({size_mb:.1f}MB)超过限制({max_mb}MB)"
+
+        # 4. 检查文件内容是否与扩展名匹配
+        file_type = self._detect_file_type(file_data)
+
+        # 如果检测到文件类型，验证是否与扩展名匹配
+        if file_type != 'unknown':
+            if not self._validate_extension_match(ext, file_type):
+                return False, f"文件内容({file_type})与扩展名({ext})不匹配"
 
         return True, ""
 

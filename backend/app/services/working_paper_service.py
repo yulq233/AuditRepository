@@ -139,6 +139,11 @@ class WorkingPaperGenerator:
         # 收集数据
         project_info = self._get_project_info(project_id)
         sampling_data = self._get_sampling_summary(project_id)
+
+        # 检查是否有抽样结果
+        if sampling_data.get("sample_size", 0) == 0:
+            raise ValueError("当前项目暂无抽样结果，请先执行抽样后再生成底稿")
+
         subject_breakdown = self._get_subject_breakdown(project_id)
         risk_distribution = self._get_risk_distribution(project_id)
 

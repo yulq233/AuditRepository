@@ -2,6 +2,89 @@
 @import './layout.scss';
 
 // =============================================
+// 全局动画定义
+// =============================================
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+// 动画类
+.animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+.animate-fadeInUp { animation: fadeInUp 0.4s ease-out; }
+.animate-fadeInDown { animation: fadeInDown 0.4s ease-out; }
+.animate-scaleIn { animation: scaleIn 0.3s ease-out; }
+.animate-slideInRight { animation: slideInRight 0.3s ease-out; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-pulse { animation: pulse 2s ease-in-out infinite; }
+
+// =============================================
 // 基础重置
 // =============================================
 
@@ -23,20 +106,24 @@ html, body {
 }
 
 // =============================================
-// 滚动条样式
+// 滚动条样式 - Figma 风格
 // =============================================
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: $border-color;
+  background: $text-placeholder;
   border-radius: $border-radius-full;
+  border: 2px solid transparent;
+  background-clip: content-box;
 
   &:hover {
-    background: $text-placeholder;
+    background: $text-secondary;
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
 }
 
@@ -45,11 +132,473 @@ html, body {
 }
 
 // =============================================
+// Element Plus 组件样式覆盖 - Figma 风格
+// =============================================
+
+// 按钮样式
+.el-button {
+  font-weight: $font-weight-medium;
+  border-radius: $border-radius-lg;
+  transition: all $transition-normal;
+  border: none;
+
+  &--primary {
+    background: $gradient-primary;
+    box-shadow: $shadow-button;
+    color: white;
+
+    &:hover, &:focus {
+      background: $gradient-primary-hover;
+      box-shadow: $shadow-md;
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  &--success {
+    background: $gradient-success;
+    box-shadow: $shadow-button;
+    color: white;
+
+    &:hover, &:focus {
+      opacity: 0.9;
+      box-shadow: $shadow-md;
+      transform: translateY(-1px);
+    }
+  }
+
+  &--warning {
+    background: $gradient-warning;
+    box-shadow: $shadow-button;
+    color: white;
+
+    &:hover, &:focus {
+      opacity: 0.9;
+      box-shadow: $shadow-md;
+      transform: translateY(-1px);
+    }
+  }
+
+  &--danger {
+    background: $gradient-danger;
+    box-shadow: $shadow-button;
+    color: white;
+
+    &:hover, &:focus {
+      opacity: 0.9;
+      box-shadow: $shadow-md;
+      transform: translateY(-1px);
+    }
+  }
+
+  &--default {
+    background: white;
+    border: 1px solid $border-color;
+    color: $text-regular;
+    box-shadow: $shadow-xs;
+
+    &:hover, &:focus {
+      border-color: $primary-color;
+      color: $primary-color;
+      background: white;
+    }
+  }
+
+  // 圆形按钮
+  &.is-circle {
+    border-radius: $border-radius-full;
+  }
+
+  // 小尺寸按钮
+  &--small {
+    border-radius: $border-radius-md;
+  }
+}
+
+// 卡片样式
+.el-card {
+  border-radius: $border-radius-xl;
+  border: none;
+  box-shadow: $shadow-card;
+  transition: all $transition-normal;
+
+  &:hover {
+    box-shadow: $shadow-card-hover;
+  }
+
+  .el-card__header {
+    padding: $spacing-lg $spacing-xl;
+    border-bottom: 1px solid $border-lighter;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  .el-card__body {
+    padding: $spacing-xl;
+  }
+}
+
+// 表格样式 - Pixso 简约风格
+.el-table {
+  border-radius: $border-radius-lg;
+
+  th.el-table__cell {
+    background: #f9fafb !important;
+    color: #374151;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 18px 16px;
+    border-bottom: 1px solid #f3f4f6;
+
+    .cell {
+      white-space: nowrap;
+      overflow: visible;
+      text-align: left;
+    }
+  }
+
+  td.el-table__cell {
+    padding: 22px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s;
+
+    .cell {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  tr {
+    transition: all 0.15s;
+
+    &:hover td.el-table__cell {
+      background: #f9fafb !important;
+    }
+  }
+
+  .el-table__inner-wrapper::before {
+    display: none;
+  }
+
+  // 固定列样式
+  .el-table-fixed-column--left,
+  .el-table-fixed-column--right {
+    background: white !important;
+  }
+
+  .el-table__fixed,
+  .el-table__fixed-right {
+    z-index: 3 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  tr:hover {
+    .el-table-fixed-column--left,
+    .el-table-fixed-column--right {
+      background: #f9fafb !important;
+    }
+  }
+}
+
+// 输入框样式
+.el-input {
+  .el-input__wrapper {
+    border-radius: $border-radius-lg;
+    border: 1px solid $border-color;
+    box-shadow: none;
+    transition: all $transition-fast;
+    padding: 4px 12px;
+
+    &:hover {
+      border-color: $text-placeholder;
+    }
+
+    &.is-focus, &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+  }
+}
+
+.el-select {
+  .el-select__wrapper {
+    border-radius: $border-radius-lg;
+    border: 1px solid $border-color;
+    box-shadow: none;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $text-placeholder;
+    }
+
+    &.is-focused {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+  }
+}
+
+.el-input-number {
+  .el-input__wrapper {
+    border-radius: $border-radius-lg;
+  }
+}
+
+// 标签样式
+.el-tag {
+  border-radius: $border-radius-md;
+  font-weight: $font-weight-medium;
+  border: none;
+  padding: 0 10px;
+  height: 24px;
+  line-height: 24px;
+
+  &.el-tag--primary {
+    background: $primary-lighter;
+    color: $primary-color;
+  }
+
+  &.el-tag--success {
+    background: $success-lighter;
+    color: $success-color;
+  }
+
+  &.el-tag--warning {
+    background: $warning-lighter;
+    color: $warning-color;
+  }
+
+  &.el-tag--danger {
+    background: $danger-lighter;
+    color: $danger-color;
+  }
+
+  &.el-tag--info {
+    background: $info-lighter;
+    color: $info-color;
+  }
+}
+
+// 分页样式
+.el-pagination {
+  gap: $spacing-xs;
+
+  .el-pager li {
+    border-radius: $border-radius-md;
+    font-weight: $font-weight-medium;
+    min-width: 32px;
+    height: 32px;
+    line-height: 32px;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $background-hover;
+    }
+
+    &.is-active {
+      background: $gradient-primary;
+      color: white;
+    }
+  }
+
+  .btn-prev, .btn-next {
+    border-radius: $border-radius-md;
+    width: 32px;
+    height: 32px;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $background-hover;
+    }
+  }
+}
+
+// 对话框样式
+.el-dialog {
+  border-radius: $border-radius-xxl;
+  overflow: hidden;
+  box-shadow: $shadow-2xl;
+
+  .el-dialog__header {
+    padding: $spacing-lg $spacing-xl;
+    border-bottom: 1px solid $border-lighter;
+    margin-right: 0;
+
+    .el-dialog__title {
+      font-weight: $font-weight-semibold;
+      font-size: $font-size-lg;
+      color: $text-primary;
+    }
+  }
+
+  .el-dialog__body {
+    padding: $spacing-xl;
+  }
+
+  .el-dialog__footer {
+    padding: $spacing-lg $spacing-xl;
+    border-top: 1px solid $border-lighter;
+    background: $background-color;
+  }
+}
+
+// 下拉菜单
+.el-dropdown-menu {
+  border-radius: $border-radius-lg;
+  border: none;
+  box-shadow: $shadow-lg;
+  padding: $spacing-xs;
+
+  .el-dropdown-menu__item {
+    border-radius: $border-radius-md;
+    padding: $spacing-sm $spacing-md;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $background-hover;
+      color: $primary-color;
+    }
+  }
+}
+
+// 消息提示
+.el-message {
+  border-radius: $border-radius-lg;
+  border: none;
+  box-shadow: $shadow-lg;
+  padding: $spacing-md $spacing-lg;
+
+  &.el-message--success {
+    background: white;
+    border-left: 4px solid $success-color;
+  }
+
+  &.el-message--warning {
+    background: white;
+    border-left: 4px solid $warning-color;
+  }
+
+  &.el-message--error {
+    background: white;
+    border-left: 4px solid $danger-color;
+  }
+
+  &.el-message--info {
+    background: white;
+    border-left: 4px solid $info-color;
+  }
+}
+
+// 徽章
+.el-badge__content {
+  border-radius: $border-radius-full;
+  font-weight: $font-weight-semibold;
+}
+
+// 上传组件
+.el-upload-dragger {
+  border-radius: $border-radius-xl;
+  border: 2px dashed $border-color;
+  transition: all $transition-normal;
+  background: $background-color;
+
+  &:hover {
+    border-color: $primary-color;
+    background: $primary-lighter;
+  }
+}
+
+// 表单
+.el-form-item__label {
+  font-weight: $font-weight-medium;
+  color: $text-secondary;
+}
+
+// 空状态
+.el-empty {
+  .el-empty__description {
+    color: $text-placeholder;
+  }
+}
+
+// 描述列表
+.el-descriptions {
+  .el-descriptions__label {
+    font-weight: $font-weight-medium;
+    color: $text-secondary;
+    background: $background-color;
+  }
+
+  .el-descriptions__cell {
+    border-color: $border-lighter;
+  }
+}
+
+// 进度条
+.el-progress {
+  .el-progress-bar__outer {
+    border-radius: $border-radius-full;
+    background: $background-color;
+  }
+
+  .el-progress-bar__inner {
+    border-radius: $border-radius-full;
+  }
+}
+
+// 警告框
+.el-alert {
+  border-radius: $border-radius-lg;
+  border: none;
+
+  &.el-alert--info {
+    background: $info-lighter;
+  }
+
+  &.el-alert--success {
+    background: $success-lighter;
+  }
+
+  &.el-alert--warning {
+    background: $warning-lighter;
+  }
+
+  &.el-alert--error {
+    background: $danger-lighter;
+  }
+}
+
+// 折叠面板
+.el-collapse {
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-lighter;
+  overflow: hidden;
+
+  .el-collapse-item__header {
+    font-weight: $font-weight-medium;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $background-hover;
+    }
+  }
+}
+
+// 分割线
+.el-divider--horizontal {
+  border-color: $border-lighter;
+}
+
+// =============================================
 // 布局容器
 // =============================================
 
 .page-container {
-  padding: $spacing-lg;
+  padding: $spacing-xl;
   background: $background-color;
   min-height: calc(100vh - $header-height);
   max-width: $content-max-width;
@@ -60,32 +609,37 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: $spacing-lg;
+  margin-bottom: $spacing-xl;
+  padding-bottom: $spacing-lg;
+  border-bottom: 1px solid $border-lighter;
 
   .page-title {
-    font-size: $font-size-xxl;
-    font-weight: $font-weight-semibold;
+    font-size: $font-size-hero;
+    font-weight: $font-weight-bold;
     color: $text-primary;
+    letter-spacing: -0.5px;
   }
 
   .page-subtitle {
-    font-size: $font-size-sm;
+    font-size: $font-size-md;
     color: $text-secondary;
     margin-top: $spacing-xs;
   }
 }
 
 // =============================================
-// 卡片组件
+// 卡片组件 - Figma 风格
 // =============================================
 
 .card-container {
   background: $background-white;
-  border-radius: $border-radius-lg;
-  padding: $spacing-lg;
+  border-radius: $border-radius-xl;
+  padding: $spacing-xl;
   margin-bottom: $spacing-lg;
   box-shadow: $shadow-card;
-  transition: box-shadow $transition-normal;
+  transition: all $transition-normal;
+  border: 1px solid $border-lighter;
+  overflow: hidden;
 
   &:hover {
     box-shadow: $shadow-card-hover;
@@ -95,13 +649,13 @@ html, body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: $spacing-md;
+    margin-bottom: $spacing-lg;
     padding-bottom: $spacing-md;
     border-bottom: 1px solid $border-lighter;
   }
 
   .card-title {
-    font-size: $font-size-lg;
+    font-size: $font-size-xl;
     font-weight: $font-weight-semibold;
     color: $text-primary;
   }
@@ -113,31 +667,52 @@ html, body {
 }
 
 // =============================================
-// 筛选区域
+// 表格容器 - 支持横向滚动
 // =============================================
 
-.filter-container {
-  margin-bottom: $spacing-lg;
-  padding: $spacing-md;
-  background: $background-white;
-  border-radius: $border-radius-md;
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: $border-radius-lg;
 
-  .el-form-item {
-    margin-bottom: 0;
-    margin-right: $spacing-md;
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $text-placeholder;
+    border-radius: 3px;
   }
 }
 
 // =============================================
-// 分页
+// 筛选区域 - Figma 风格
+// =============================================
+
+.filter-container {
+  margin-bottom: $spacing-lg;
+  padding: $spacing-lg;
+  background: $background-white;
+  border-radius: $border-radius-xl;
+  border: 1px solid $border-lighter;
+
+  .el-form-item {
+    margin-bottom: 0;
+    margin-right: $spacing-lg;
+  }
+}
+
+// =============================================
+// 分页 - Figma 风格
 // =============================================
 
 .pagination-container {
-  margin-top: $spacing-lg;
+  margin-top: $spacing-xl;
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: $spacing-md;
+  padding-top: $spacing-lg;
 
   .pagination-info {
     font-size: $font-size-sm;
@@ -146,16 +721,16 @@ html, body {
 }
 
 // =============================================
-// 状态标签
+// 状态标签 - Figma 风格
 // =============================================
 
 .status-tag {
   display: inline-flex;
   align-items: center;
-  padding: $spacing-xs $spacing-sm;
-  border-radius: $border-radius-md;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $border-radius-full;
   font-size: $font-size-xs;
-  font-weight: $font-weight-medium;
+  font-weight: $font-weight-semibold;
 
   &.active {
     background: $success-lighter;
@@ -184,16 +759,16 @@ html, body {
 }
 
 // =============================================
-// 风险标签
+// 风险标签 - Figma 风格
 // =============================================
 
 .risk-tag {
   display: inline-flex;
   align-items: center;
-  padding: $spacing-xs $spacing-sm;
-  border-radius: $border-radius-md;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $border-radius-full;
   font-size: $font-size-xs;
-  font-weight: $font-weight-medium;
+  font-weight: $font-weight-semibold;
 
   &.high {
     background: $danger-lighter;
@@ -238,10 +813,22 @@ html, body {
 }
 
 // =============================================
-// 统计卡片
+// 统计卡片 - Figma 风格
 // =============================================
 
 .stat-card {
+  background: white;
+  border-radius: $border-radius-xl;
+  padding: $spacing-xl;
+  box-shadow: $shadow-card;
+  transition: all $transition-normal;
+  border: 1px solid $border-lighter;
+
+  &:hover {
+    box-shadow: $shadow-card-hover;
+    transform: translateY(-2px);
+  }
+
   .stat-content {
     display: flex;
     align-items: center;
@@ -250,21 +837,22 @@ html, body {
   .stat-icon {
     width: 56px;
     height: 56px;
-    border-radius: $border-radius-lg;
+    border-radius: $border-radius-xl;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: $background-white;
-    margin-right: $spacing-md;
+    color: white;
+    margin-right: $spacing-lg;
     flex-shrink: 0;
   }
 
   .stat-info {
     .stat-value {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: $font-weight-bold;
       color: $text-primary;
       line-height: 1;
+      letter-spacing: -1px;
     }
 
     .stat-label {
@@ -276,7 +864,7 @@ html, body {
 }
 
 // =============================================
-// 空状态
+// 空状态 - Figma 风格
 // =============================================
 
 .empty-state {
@@ -284,18 +872,52 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: $spacing-xxl;
+  padding: $spacing-3xl;
   color: $text-secondary;
 
   .empty-icon {
-    font-size: 64px;
+    font-size: 80px;
     color: $text-placeholder;
-    margin-bottom: $spacing-md;
+    margin-bottom: $spacing-lg;
+    opacity: 0.5;
   }
 
   .empty-text {
-    font-size: $font-size-md;
-    margin-bottom: $spacing-lg;
+    font-size: $font-size-lg;
+    margin-bottom: $spacing-xl;
+    color: $text-secondary;
+  }
+}
+
+// =============================================
+// 表格增强样式
+// =============================================
+
+.figma-table {
+  background: white;
+  border-radius: $border-radius-xl;
+  overflow: hidden;
+  box-shadow: $shadow-card;
+  border: 1px solid $border-lighter;
+
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing-lg $spacing-xl;
+    border-bottom: 1px solid $border-lighter;
+    background: $background-color;
+
+    .table-title {
+      font-size: $font-size-lg;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+
+    .table-actions {
+      display: flex;
+      gap: $spacing-sm;
+    }
   }
 }
 
@@ -361,6 +983,156 @@ html, body {
     .el-form-item {
       margin-bottom: $spacing-md;
       margin-right: 0;
+    }
+  }
+}
+
+// =============================================
+// 高级视觉效果 - 玻璃态 & 渐变
+// =============================================
+
+// 玻璃态卡片
+.glass-card {
+  background: $glass-background;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid $glass-border;
+  border-radius: $border-radius-xl;
+  box-shadow: $glass-shadow;
+}
+
+// 渐变背景容器
+.gradient-bg {
+  background: $gradient-bg-purple;
+  background-size: 200% 200%;
+  animation: gradient 15s ease infinite;
+}
+
+// 悬浮效果卡片
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// 闪烁加载效果
+.shimmer-loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+// 光晕效果
+.glow-effect {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    box-shadow: $shadow-glow-primary;
+    pointer-events: none;
+  }
+
+  &:hover::after {
+    opacity: 1;
+  }
+}
+
+// 图标容器样式
+.icon-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $border-radius-lg;
+  transition: all $transition-normal;
+
+  &--sm {
+    width: 32px;
+    height: 32px;
+  }
+
+  &--md {
+    width: 48px;
+    height: 48px;
+  }
+
+  &--lg {
+    width: 64px;
+    height: 64px;
+  }
+
+  &--primary {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+    color: $primary-color;
+  }
+
+  &--success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(52, 211, 153, 0.1));
+    color: $success-color;
+  }
+
+  &--warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.1));
+    color: $warning-color;
+  }
+
+  &--danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(248, 113, 113, 0.1));
+    color: $danger-color;
+  }
+}
+
+// 分隔线样式
+.divider-gradient {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, $border-color, transparent);
+}
+
+// 状态徽章增强
+.badge-enhanced {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: $border-radius-full;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+}
+
+// 页面入场动画
+.page-enter {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+// 卡片入场动画
+.card-enter {
+  animation: scaleIn 0.3s ease-out;
+}
+
+// 列表项交错动画
+.stagger-item {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+
+  @for $i from 1 through 10 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.05}s;
     }
   }
 }

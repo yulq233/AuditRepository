@@ -33,6 +33,7 @@
             <el-icon><DataAnalysis /></el-icon>
             <span>智能抽样</span>
           </template>
+          <el-menu-item index="/sampling/wizard">抽样向导</el-menu-item>
           <el-menu-item index="/sampling/risk-profile">风险画像</el-menu-item>
           <el-menu-item index="/sampling/strategy">抽样策略</el-menu-item>
           <el-menu-item index="/sampling/execute">执行抽样</el-menu-item>
@@ -67,6 +68,11 @@
         <el-menu-item index="/ai">
           <el-icon><MagicStick /></el-icon>
           <span>AI服务</span>
+        </el-menu-item>
+
+        <el-menu-item index="/crawler">
+          <el-icon><Download /></el-icon>
+          <span>数据爬取</span>
         </el-menu-item>
       </el-menu>
     </div>
@@ -112,6 +118,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Download } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()

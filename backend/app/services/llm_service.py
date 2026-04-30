@@ -2,10 +2,12 @@
 LLM适配器框架
 统一接口支持多种大语言模型：Ollama、通义千问、文心一言、智谱GLM等
 模型配置从环境变量(.env)读取
+自动记录AI调用日志，支持用量统计
 """
 import os
 import json
 import httpx
+import time
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional, AsyncGenerator
 from dataclasses import dataclass, field
@@ -13,6 +15,7 @@ from datetime import datetime
 import asyncio
 
 from app.core.config import settings
+from app.services.ai_usage_service import AIUsageTracker
 
 
 @dataclass
@@ -24,7 +27,7 @@ class LLMConfig:
     base_url: Optional[str] = None
     temperature: float = 0.7
     max_tokens: int = 2048
-    timeout: int = 60
+    timeout: int = 180  # 增加到180秒，支持AI视觉识别等耗时操作
 
 
 @dataclass
@@ -32,6 +35,7 @@ class ChatMessage:
     """聊天消息"""
     role: str  # system, user, assistant
     content: str
+    images: Optional[List[str]] = None  # base64编码的图片列表
 
 
 @dataclass
@@ -75,6 +79,16 @@ class LLMAdapter(ABC):
     @abstractmethod
     async def embed(self, text: str) -> List[float]:
         """文本向量化"""
+        pass
+
+    async def chat_with_images(
+        self,
+        messages: List[ChatMessage],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None
+    ) -> LLMResponse:
+        """带图片的聊天补全（默认调用chat，子类可重写）"""
+        return await self.chat(messages, temperature, max_tokens)
         pass
 
     @abstractmethod
@@ -399,6 +413,144 @@ class QwenAdapter(LLMAdapter):
                     except json.JSONDecodeError:
                         continue
 
+    async def chat_with_images(
+        self,
+        messages: List[ChatMessage],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None
+    ) -> LLMResponse:
+        """带图片的聊天补全 - 使用视觉模型识别图片"""
+        if self._is_anthropic_mode:
+            return await self._chat_with_images_anthropic(messages, temperature, max_tokens)
+        else:
+            return await self._chat_with_images_openai(messages, temperature, max_tokens)
+
+    async def _chat_with_images_anthropic(
+        self,
+        messages: List[ChatMessage],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None
+    ) -> LLMResponse:
+        """Anthropic兼容模式带图片的聊天"""
+        url = f"{self.base_url}/v1/messages"
+
+        # 构建消息，支持图片
+        chat_messages = []
+        for m in messages:
+            if m.role == "system":
+                continue
+            content_parts = []
+            # 添加文本
+            if m.content:
+                content_parts.append({"type": "text", "text": m.content})
+            # 添加图片
+            if m.images:
+                for img_base64 in m.images:
+                    content_parts.append({
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": img_base64
+                        }
+                    })
+            chat_messages.append({"role": m.role, "content": content_parts})
+
+        # 提取system消息
+        system_content = None
+        for m in messages:
+            if m.role == "system":
+                system_content = m.content
+                break
+
+        payload = {
+            "model": self.config.model,
+            "max_tokens": max_tokens or self.config.max_tokens,
+            "messages": chat_messages
+        }
+        if system_content:
+            payload["system"] = system_content
+
+        response = await self.client.post(url, json=payload, headers=self._get_headers())
+        response.raise_for_status()
+
+        data = response.json()
+
+        # 解析响应
+        content_parts = []
+        for block in data.get("content", []):
+            if block.get("type") == "text":
+                content_parts.append(block.get("text", ""))
+
+        content = "".join(content_parts)
+
+        return LLMResponse(
+            content=content,
+            model=self.config.model,
+            provider="qwen",
+            usage={
+                "input_tokens": data.get("usage", {}).get("input_tokens", 0),
+                "output_tokens": data.get("usage", {}).get("output_tokens", 0),
+            },
+            finish_reason=data.get("stop_reason", "stop"),
+            raw_response=data
+        )
+
+    async def _chat_with_images_openai(
+        self,
+        messages: List[ChatMessage],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None
+    ) -> LLMResponse:
+        """OpenAI兼容模式带图片的聊天"""
+        url = f"{self.base_url}/chat/completions"
+
+        # 构建消息，支持图片
+        chat_messages = []
+        for m in messages:
+            content_parts = []
+            # 添加文本
+            if m.content:
+                content_parts.append({"type": "text", "text": m.content})
+            # 添加图片
+            if m.images:
+                for img_base64 in m.images:
+                    content_parts.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{img_base64}"
+                        }
+                    })
+            chat_messages.append({"role": m.role, "content": content_parts})
+
+        # 添加system消息
+        for m in messages:
+            if m.role == "system":
+                chat_messages.insert(0, {"role": "system", "content": m.content})
+                break
+
+        payload = {
+            "model": self.config.model,
+            "messages": chat_messages,
+            "temperature": temperature or self.config.temperature,
+            "max_tokens": max_tokens or self.config.max_tokens
+        }
+
+        response = await self.client.post(url, json=payload, headers=self._get_headers())
+        response.raise_for_status()
+
+        data = response.json()
+        choice = data.get("choices", [{}])[0]
+
+        return LLMResponse(
+            content=choice.get("message", {}).get("content", ""),
+            model=self.config.model,
+            provider="qwen",
+            usage=data.get("usage", {}),
+            finish_reason=choice.get("finish_reason", "stop"),
+            raw_response=data
+        )
+
     async def embed(self, text: str) -> List[float]:
         """文本向量化"""
         # Anthropic模式不支持embedding，返回空列表
@@ -680,8 +832,11 @@ class LLMService:
 
     @property
     def adapter(self) -> LLMAdapter:
-        """获取适配器（懒加载）"""
+        """获取适配器（懒加载，自动重建失效的客户端）"""
         if self._adapter is None:
+            self._adapter = LLMFactory.create(self.config)
+        elif self._adapter.client.is_closed:
+            # 客户端已关闭，重新创建
             self._adapter = LLMFactory.create(self.config)
         return self._adapter
 
@@ -694,10 +849,55 @@ class LLMService:
         self,
         messages: List[ChatMessage],
         temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None
+        max_tokens: Optional[int] = None,
+        purpose: str = "general",
+        operation: str = "chat",
+        project_id: Optional[str] = None
     ) -> LLMResponse:
-        """聊天补全"""
-        return await self.adapter.chat(messages, temperature, max_tokens)
+        """聊天补全（带追踪）"""
+        start_time = time.time()
+        request_preview = str([{"role": m.role, "content": m.content[:100]} for m in messages])
+
+        try:
+            response = await self.adapter.chat(messages, temperature, max_tokens)
+            latency_ms = (time.time() - start_time) * 1000
+
+            # 记录调用日志
+            AIUsageTracker.log_call(
+                purpose=purpose,
+                provider=self.config.provider,
+                model=self.config.model,
+                operation=operation,
+                input_tokens=response.usage.get('input_tokens', response.usage.get('prompt_tokens', 0)),
+                output_tokens=response.usage.get('output_tokens', response.usage.get('completion_tokens', 0)),
+                latency_ms=latency_ms,
+                status="success",
+                request_content=request_preview,
+                response_content=response.content[:500] if response.content else None,
+                project_id=project_id
+            )
+
+            return response
+
+        except Exception as e:
+            latency_ms = (time.time() - start_time) * 1000
+
+            # 记录失败日志
+            AIUsageTracker.log_call(
+                purpose=purpose,
+                provider=self.config.provider,
+                model=self.config.model,
+                operation=operation,
+                input_tokens=0,
+                output_tokens=0,
+                latency_ms=latency_ms,
+                status="error",
+                error_message=str(e),
+                request_content=request_preview,
+                project_id=project_id
+            )
+
+            raise
 
     async def chat_stream(
         self,
@@ -705,13 +905,112 @@ class LLMService:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None
     ) -> AsyncGenerator[str, None]:
-        """流式聊天补全"""
+        """流式聊天补全（不追踪，流式输出）"""
         async for chunk in self.adapter.chat_stream(messages, temperature, max_tokens):
             yield chunk
 
-    async def embed(self, text: str) -> List[float]:
-        """文本向量化"""
-        return await self.adapter.embed(text)
+    async def chat_with_images(
+        self,
+        messages: List[ChatMessage],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        purpose: str = "recognition",
+        operation: str = "chat_with_images",
+        project_id: Optional[str] = None
+    ) -> LLMResponse:
+        """带图片的聊天补全（带追踪）"""
+        start_time = time.time()
+        request_preview = "image_analysis_request"
+
+        try:
+            response = await self.adapter.chat_with_images(messages, temperature, max_tokens)
+            latency_ms = (time.time() - start_time) * 1000
+
+            # 记录调用日志
+            AIUsageTracker.log_call(
+                purpose=purpose,
+                provider=self.config.provider,
+                model=self.config.model,
+                operation=operation,
+                input_tokens=response.usage.get('input_tokens', response.usage.get('prompt_tokens', 0)),
+                output_tokens=response.usage.get('output_tokens', response.usage.get('completion_tokens', 0)),
+                latency_ms=latency_ms,
+                status="success",
+                request_content=request_preview,
+                response_content=response.content[:500] if response.content else None,
+                project_id=project_id
+            )
+
+            return response
+
+        except Exception as e:
+            latency_ms = (time.time() - start_time) * 1000
+
+            AIUsageTracker.log_call(
+                purpose=purpose,
+                provider=self.config.provider,
+                model=self.config.model,
+                operation=operation,
+                input_tokens=0,
+                output_tokens=0,
+                latency_ms=latency_ms,
+                status="error",
+                error_message=str(e),
+                request_content=request_preview,
+                project_id=project_id
+            )
+
+            raise
+
+    async def embed(
+        self,
+        text: str,
+        purpose: str = "general",
+        operation: str = "embed",
+        project_id: Optional[str] = None
+    ) -> List[float]:
+        """文本向量化（带追踪）"""
+        start_time = time.time()
+        request_preview = text[:100] if text else None
+
+        try:
+            embedding = await self.adapter.embed(text)
+            latency_ms = (time.time() - start_time) * 1000
+
+            # embedding通常没有token统计，记录0
+            AIUsageTracker.log_call(
+                purpose=purpose,
+                provider=self.config.provider,
+                model=self.config.model,
+                operation=operation,
+                input_tokens=0,
+                output_tokens=0,
+                latency_ms=latency_ms,
+                status="success",
+                request_content=request_preview,
+                project_id=project_id
+            )
+
+            return embedding
+
+        except Exception as e:
+            latency_ms = (time.time() - start_time) * 1000
+
+            AIUsageTracker.log_call(
+                purpose=purpose,
+                provider=self.config.provider,
+                model=self.config.model,
+                operation=operation,
+                input_tokens=0,
+                output_tokens=0,
+                latency_ms=latency_ms,
+                status="error",
+                error_message=str(e),
+                request_content=request_preview,
+                project_id=project_id
+            )
+
+            raise
 
     async def embed_batch(self, texts: List[str]) -> List[List[float]]:
         """批量文本向量化"""
@@ -773,3 +1072,95 @@ class LLMService:
 
 # 全局LLM服务实例 - 启动时从配置文件初始化
 llm_service = LLMService()
+
+
+class MultiPurposeLLMServiceManager:
+    """
+    多用途LLM服务管理器
+
+    支持按用途获取不同的LLM服务实例：
+    - general: 通用AI服务（默认）
+    - recognition: 图片/PDF识别专用
+    - risk_analysis: 风险分析专用
+    """
+
+    _instances: Dict[str, LLMService] = {}
+
+    @classmethod
+    def get_service(cls, purpose: str = "general") -> LLMService:
+        """
+        获取指定用途的LLM服务实例
+
+        Args:
+            purpose: 用途类型 (general/recognition/risk_analysis)
+
+        Returns:
+            LLMService: 对应用途的LLM服务实例
+        """
+        if purpose not in cls._instances:
+            config_dict = settings.get_ai_config_for_purpose(purpose)
+            config = LLMConfig(
+                provider=config_dict["provider"],
+                model=config_dict["model"],
+                api_key=config_dict.get("api_key"),
+                base_url=config_dict.get("base_url"),
+                temperature=config_dict["temperature"],
+                max_tokens=config_dict["max_tokens"],
+            )
+            cls._instances[purpose] = LLMService(config)
+
+        return cls._instances[purpose]
+
+    @classmethod
+    async def refresh_service(cls, purpose: str):
+        """
+        刷新指定用途的服务实例
+
+        配置变更后调用，清除旧实例并重新创建
+        """
+        if purpose in cls._instances:
+            await cls._instances[purpose].close()
+            del cls._instances[purpose]
+
+    @classmethod
+    async def refresh_all(cls):
+        """刷新所有服务实例"""
+        for purpose in list(cls._instances.keys()):
+            await cls._instances[purpose].close()
+        cls._instances.clear()
+
+    @classmethod
+    def get_purpose_status(cls, purpose: str) -> Dict[str, Any]:
+        """获取指定用途的配置状态"""
+        config_dict = settings.get_ai_config_for_purpose(purpose)
+        return {
+            "purpose": purpose,
+            "purpose_name": {
+                "general": "通用AI服务",
+                "recognition": "图片/PDF识别",
+                "risk_analysis": "风险分析"
+            }.get(purpose, purpose),
+            "provider": config_dict["provider"],
+            "model": config_dict["model"],
+            "temperature": config_dict["temperature"],
+            "max_tokens": config_dict["max_tokens"]
+        }
+
+
+# 全局服务管理器实例
+llm_service_manager = MultiPurposeLLMServiceManager()
+
+
+def get_recognition_service() -> LLMService:
+    """获取图片/PDF识别服务"""
+    return llm_service_manager.get_service("recognition")
+
+
+def get_risk_analysis_service() -> LLMService:
+    """获取风险分析服务"""
+    return llm_service_manager.get_service("risk_analysis")
+
+
+def get_general_service() -> LLMService:
+    """获取通用AI服务"""
+    return llm_service_manager.get_service("general")

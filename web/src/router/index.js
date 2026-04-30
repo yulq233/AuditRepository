@@ -38,11 +38,23 @@ const routes = [
         meta: { title: '凭证管理', icon: 'Document' }
       },
       {
+        path: 'vouchers/:projectId/:id',
+        name: 'VoucherDetail',
+        component: () => import('@/views/vouchers/detail.vue'),
+        meta: { title: '凭证详情', hidden: true }
+      },
+      {
         path: 'sampling',
         name: 'Sampling',
         redirect: '/sampling/risk-profile',
         meta: { title: '智能抽样', icon: 'DataAnalysis' },
         children: [
+          {
+            path: 'wizard',
+            name: 'SamplingWizard',
+            component: () => import('@/views/sampling/wizard.vue'),
+            meta: { title: '抽样向导' }
+          },
           {
             path: 'risk-profile',
             name: 'RiskProfile',
@@ -66,6 +78,24 @@ const routes = [
             name: 'SamplingResults',
             component: () => import('@/views/sampling/results.vue'),
             meta: { title: '抽样结果' }
+          },
+          {
+            path: 'test',
+            name: 'SampleTest',
+            component: () => import('@/views/sampling/test.vue'),
+            meta: { title: '样本测试' }
+          },
+          {
+            path: 'inference',
+            name: 'Inference',
+            component: () => import('@/views/sampling/inference.vue'),
+            meta: { title: '总体推断' }
+          },
+          {
+            path: 'detail',
+            name: 'SamplingDetail',
+            component: () => import('@/views/sampling/detail.vue'),
+            meta: { title: '抽样详情', hidden: true }
           }
         ]
       },
@@ -104,6 +134,12 @@ const routes = [
         name: 'AI',
         component: () => import('@/views/ai/index.vue'),
         meta: { title: 'AI服务', icon: 'MagicStick' }
+      },
+      {
+        path: 'crawler',
+        name: 'Crawler',
+        component: () => import('@/views/crawler/index.vue'),
+        meta: { title: '数据爬取', icon: 'Download' }
       }
     ]
   }

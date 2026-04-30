@@ -1,12 +1,13 @@
 """
 审计轨迹API
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
 from app.core.database import get_db_cursor
+from app.core.auth import get_current_user, UserInDB
 from app.services.audit_trail_service import audit_trail, AuditAction
 
 router = APIRouter()
@@ -34,7 +35,8 @@ async def query_audit_trail(
     action: Optional[str] = Query(None, description="动作类型"),
     target_type: Optional[str] = Query(None, description="目标类型"),
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=200, description="每页数量")
+    page_size: int = Query(50, ge=1, le=200, description="每页数量"),
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """
     查询审计轨迹
@@ -84,7 +86,8 @@ async def query_audit_trail(
 async def get_audit_statistics(
     project_id: str,
     start_date: Optional[datetime] = Query(None, description="开始日期"),
-    end_date: Optional[datetime] = Query(None, description="结束日期")
+    end_date: Optional[datetime] = Query(None, description="结束日期"),
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """
     获取审计轨迹统计
@@ -112,7 +115,11 @@ async def get_audit_statistics(
 
 
 @router.get("/projects/{project_id}/audit-trail/samples/{sample_id}")
-async def get_sample_trail(project_id: str, sample_id: str):
+async def get_sample_trail(
+    project_id: str,
+    sample_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
     """
     获取样本的完整轨迹
 
@@ -150,7 +157,8 @@ async def get_user_activity(
     project_id: str,
     user_id: str,
     start_date: Optional[datetime] = Query(None, description="开始日期"),
-    end_date: Optional[datetime] = Query(None, description="结束日期")
+    end_date: Optional[datetime] = Query(None, description="结束日期"),
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """
     获取用户活动记录
@@ -192,7 +200,8 @@ async def get_user_activity(
 async def export_audit_trail(
     project_id: str,
     start_date: Optional[datetime] = Query(None, description="开始日期"),
-    end_date: Optional[datetime] = Query(None, description="结束日期")
+    end_date: Optional[datetime] = Query(None, description="结束日期"),
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """
     导出审计轨迹
@@ -220,7 +229,7 @@ async def export_audit_trail(
 
 
 @router.get("/audit-actions")
-async def list_audit_actions():
+async def list_audit_actions(current_user: UserInDB = Depends(get_current_user)):
     """获取审计动作类型列表"""
     return {
         "items": [

@@ -1,6 +1,9 @@
 """
-工作底稿API
+工作底稿 API
 """
+import logging
+import urllib.parse
+
 from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
@@ -8,7 +11,7 @@ from typing import Optional, List
 from datetime import datetime
 
 from app.core.database import get_db_cursor
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, UserInDB
 from app.services.working_paper_service import (
     working_paper_generator, PaperType, WorkingPaper
 )
@@ -16,32 +19,33 @@ from app.services.export_service import excel_exporter, pdf_exporter
 
 router = APIRouter()
 
+logger = logging.getLogger(__name__)
+
 
 # ==================== 数据模型 ====================
 
 class PaperGenerateRequest(BaseModel):
     """生成底稿请求"""
     paper_type: str = Field(..., description="底稿类型")
-    subject_code: Optional[str] = Field(None, description="科目代码(实质性测试需要)")
-    include_ai_description: bool = Field(default=True, description="是否包含AI描述")
+    subject_code: Optional[str] = Field(None, description="科目代码 (实质性测试需要)")
+    include_ai_description: bool = Field(default=True, description="是否包含 AI 描述")
 
 
 class PaperUpdateRequest(BaseModel):
     """更新底稿请求"""
     title: Optional[str] = Field(None, description="标题")
-    ai_description: Optional[str] = Field(None, description="AI描述")
+    ai_description: Optional[str] = Field(None, description="AI 描述")
 
 
-# ==================== API端点 ====================
+# ==================== API 端点 ====================
 
 @router.post("/projects/{project_id}/papers/generate")
 async def generate_paper(
     project_id: str,
     request: PaperGenerateRequest,
-    current_user = Depends(get_current_user)
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """生成工作底稿"""
-    # 验证项目存在
     with get_db_cursor() as cursor:
         cursor.execute("SELECT id FROM projects WHERE id = ?", [project_id])
         if not cursor.fetchone():
@@ -79,16 +83,17 @@ async def generate_paper(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"生成失败: {str(e)}")
+        logger.error(f"底稿生成失败: {str(e)}")
+        raise HTTPException(status_code=500, detail="底稿生成失败，请稍后重试")
 
 
 @router.get("/projects/{project_id}/papers")
 async def list_papers(
     project_id: str,
-    paper_type: Optional[str] = Query(None, description="按类型筛选")
+    paper_type: Optional[str] = Query(None, description="按类型筛选"),
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """获取底稿列表"""
-    # 验证项目存在
     with get_db_cursor() as cursor:
         cursor.execute("SELECT id FROM projects WHERE id = ?", [project_id])
         if not cursor.fetchone():
@@ -115,7 +120,11 @@ async def list_papers(
 
 
 @router.get("/projects/{project_id}/papers/{paper_id}")
-async def get_paper(project_id: str, paper_id: str):
+async def get_paper(
+    project_id: str,
+    paper_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+):
     """获取底稿详情"""
     paper = working_paper_generator.get_paper(paper_id)
 
@@ -146,7 +155,7 @@ async def update_paper(
     project_id: str,
     paper_id: str,
     update: PaperUpdateRequest,
-    current_user = Depends(get_current_user)
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """更新底稿"""
     paper = working_paper_generator.get_paper(paper_id)
@@ -169,7 +178,7 @@ async def update_paper(
 async def delete_paper(
     project_id: str,
     paper_id: str,
-    current_user = Depends(get_current_user)
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """删除底稿"""
     paper = working_paper_generator.get_paper(paper_id)
@@ -182,11 +191,18 @@ async def delete_paper(
     return {"message": "底稿删除成功"}
 
 
+def _make_content_disposition(filename: str) -> str:
+    """构建安全的 Content-Disposition 头值"""
+    encoded = urllib.parse.quote(filename)
+    return f"attachment; filename*=UTF-8''{encoded}"
+
+
 @router.get("/projects/{project_id}/papers/{paper_id}/export")
 async def export_paper(
     project_id: str,
     paper_id: str,
-    format: str = Query("pdf", description="导出格式: pdf/excel")
+    format: str = Query("pdf", description="导出格式：pdf/excel"),
+    current_user: UserInDB = Depends(get_current_user)
 ):
     """导出底稿"""
     paper = working_paper_generator.get_paper(paper_id)
@@ -196,15 +212,42 @@ async def export_paper(
 
     try:
         if format == "pdf":
-            # 导出PDF
+            if not pdf_exporter.available:
+                raise RuntimeError("PDF 导出库未安装，请安装 reportlab: pip install reportlab")
+
+            with get_db_cursor() as cursor:
+                cursor.execute(
+                    "SELECT id, name FROM projects WHERE id = ?",
+                    [project_id]
+                )
+                project = cursor.fetchone()
+
+            sections_data = []
+            for s in paper.sections:
+                sections_data.append({
+                    "title": s.title,
+                    "content": s.content or "",
+                    "order": s.order
+                })
+
+            paper_data = {
+                "title": paper.title,
+                "paper_type": paper.paper_type.value,
+                "sections": sections_data,
+                "ai_description": paper.ai_description or ""
+            }
+            project_info = {"id": project[0], "name": project[1]} if project else None
+
+            logger.info(f"Exporting paper: title={paper.title}, sections={len(sections_data)}")
+
             file_data = pdf_exporter.export_working_paper(
-                project_id=project_id,
-                title=paper.title
+                paper=paper_data,
+                project_info=project_info
             )
             filename = f"{paper.title}.pdf"
             media_type = "application/pdf"
+            logger.info(f"PDF exported successfully: {len(file_data)} bytes")
         else:
-            # 导出Excel
             file_data = excel_exporter.export_project_summary(project_id)
             filename = f"{paper.title}.xlsx"
             media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -213,18 +256,22 @@ async def export_paper(
             content=file_data,
             media_type=media_type,
             headers={
-                "Content-Disposition": f'attachment; filename="{filename}"'
+                "Content-Disposition": _make_content_disposition(filename)
             }
         )
 
+    except HTTPException:
+        raise
     except RuntimeError as e:
+        logger.error(f"Export error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"导出失败: {str(e)}")
+        logger.error(f"Export error: {type(e).__name__}: {str(e)}")
+        raise HTTPException(status_code=500, detail="导出失败，请稍后重试")
 
 
 @router.get("/paper-types")
-async def list_paper_types():
+async def list_paper_types(current_user: UserInDB = Depends(get_current_user)):
     """获取底稿类型列表"""
     return {
         "items": [
