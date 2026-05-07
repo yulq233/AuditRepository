@@ -11,7 +11,7 @@ import json
 import os
 import logging
 
-from app.core.database import get_db_cursor, get_db
+from app.core.database import get_db_cursor, get_db, with_db_lock
 from app.core.config import settings
 from app.core.auth import get_current_user, UserInDB
 from app.services.llm_service import llm_service, get_recognition_service
@@ -755,32 +755,93 @@ async def delete_attachment(
     current_user: UserInDB = Depends(get_current_user)
 ):
     """删除附件"""
-    with get_db_cursor() as cursor:
-        # 查询附件
-        cursor.execute(
-            """
-            SELECT a.file_path
-            FROM voucher_attachments a
-            JOIN vouchers v ON a.voucher_id = v.id
-            WHERE a.id = ? AND v.project_id = ? AND a.voucher_id = ?
-            """,
-            [attachment_id, project_id, voucher_id]
-        )
-        row = cursor.fetchone()
+    # 使用数据库锁确保线程安全
+    with with_db_lock():
+        with get_db_cursor() as cursor:
+            # 查询附件
+            cursor.execute(
+                """
+                SELECT a.file_path
+                FROM voucher_attachments a
+                JOIN vouchers v ON a.voucher_id = v.id
+                WHERE a.id = ? AND v.project_id = ? AND a.voucher_id = ?
+                """,
+                [attachment_id, project_id, voucher_id]
+            )
+            row = cursor.fetchone()
 
-        if not row:
-            raise HTTPException(status_code=404, detail="附件不存在")
+            if not row:
+                raise HTTPException(status_code=404, detail="附件不存在")
 
-        file_path = row[0]
+            file_path = row[0]
 
-        # 删除文件
-        full_path = os.path.join(settings.ATTACHMENT_PATH, file_path)
-        if os.path.exists(full_path):
-            os.remove(full_path)
+            # 删除文件
+            full_path = os.path.join(settings.ATTACHMENT_PATH, file_path)
+            if os.path.exists(full_path):
+                try:
+                    os.remove(full_path)
+                except Exception as e:
+                    logger.warning(f"删除文件失败 {full_path}: {str(e)}")
+                    # 文件删除失败继续执行，至少删除数据库记录
 
-        # 删除数据库记录
-        cursor.execute("DELETE FROM voucher_attachments WHERE id = ?", [attachment_id])
-        get_db().commit()
+            # 删除数据库记录（处理索引问题）
+            max_retries = 2
+            for attempt in range(max_retries):
+                try:
+                    cursor.execute("DELETE FROM voucher_attachments WHERE id = ?", [attachment_id])
+                    get_db().commit()
+                    break  # 成功则退出循环
+                except Exception as e:
+                    error_msg = str(e)
+                    logger.warning(f"删除附件记录失败 (尝试 {attempt + 1}/{max_retries}): {error_msg}")
+
+                    if attempt < max_retries - 1:
+                        # 检查是否是索引错误
+                        if "index" in error_msg.lower() or "索引" in error_msg:
+                            try:
+                                # 尝试删除并重新创建索引
+                                logger.info("尝试修复附件表索引...")
+                                cursor.execute("DROP INDEX IF EXISTS idx_attachments_voucher_id")
+                                get_db().commit()
+                                # 再次尝试删除
+                                cursor.execute("DELETE FROM voucher_attachments WHERE id = ?", [attachment_id])
+                                get_db().commit()
+                                # 重新创建索引
+                                cursor.execute("CREATE INDEX IF NOT EXISTS idx_attachments_voucher_id ON voucher_attachments(voucher_id)")
+                                get_db().commit()
+                                logger.info("索引修复成功")
+                                break  # 成功退出循环
+                            except Exception as repair_error:
+                                logger.error(f"索引修复失败: {str(repair_error)}")
+                                # 继续尝试其他方法
+
+                        # 短暂等待后重试
+                        import time
+                        time.sleep(0.1 * (attempt + 1))
+                    else:
+                        logger.error(f"删除附件记录失败，已达到最大重试次数: {error_msg}")
+                        # 最后尝试：使用更激进的删除方式
+                        try:
+                            logger.warning("尝试强制删除附件记录...")
+                            # 临时禁用外键约束（如果支持）
+                            try:
+                                cursor.execute("PRAGMA foreign_keys=OFF")
+                            except:
+                                pass
+                            cursor.execute("DELETE FROM voucher_attachments WHERE id = ?", [attachment_id])
+                            get_db().commit()
+                            try:
+                                cursor.execute("PRAGMA foreign_keys=ON")
+                            except:
+                                pass
+                            logger.warning("强制删除成功")
+                            break
+                        except Exception as final_error:
+                            logger.error(f"强制删除也失败: {str(final_error)}")
+                            raise HTTPException(
+                                status_code=500,
+                                detail=f"删除附件失败: {error_msg}"
+                            )
 
     return {"message": "附件删除成功"}
 
