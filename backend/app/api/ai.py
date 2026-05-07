@@ -386,8 +386,8 @@ async def test_purpose_model(request: PurposeModelTestRequest, current_user: Use
 @router.post("/analyze", response_model=AIAnalyzeResponse)
 @limiter.limit("20/hour")  # 每小时最多20次分析请求
 async def analyze_vouchers(
-    http_request: Request,
-    request: AIAnalyzeRequest,
+    request: Request,
+    req_data: AIAnalyzeRequest,
     background_tasks: BackgroundTasks,
     current_user: UserInDB = Depends(get_current_user)
 ):
@@ -403,13 +403,13 @@ async def analyze_vouchers(
     # 获取凭证数据
     with get_db_cursor() as cursor:
         # 验证项目
-        cursor.execute("SELECT id FROM projects WHERE id = ?", [request.project_id])
+        cursor.execute("SELECT id FROM projects WHERE id = ?", [req_data.project_id])
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="项目不存在")
 
         # 获取凭证
-        if request.voucher_ids:
-            placeholders = ",".join(["?" for _ in request.voucher_ids])
+        if req_data.voucher_ids:
+            placeholders = ",".join(["?" for _ in req_data.voucher_ids])
             cursor.execute(
                 f"""
                 SELECT id, voucher_no, voucher_date, amount,
@@ -419,7 +419,7 @@ async def analyze_vouchers(
                 FROM vouchers v
                 WHERE project_id = ? AND id IN ({placeholders})
                 """,
-                [request.project_id] + request.voucher_ids
+                [req_data.project_id] + req_data.voucher_ids
             )
         else:
             cursor.execute(
@@ -433,7 +433,7 @@ async def analyze_vouchers(
                 ORDER BY amount DESC
                 LIMIT 100
                 """,
-                [request.project_id]
+                [req_data.project_id]
             )
 
         rows = cursor.fetchall()
@@ -460,17 +460,17 @@ async def analyze_vouchers(
 
     try:
         # 如果是总体风险分析类型，使用带附件识别的服务
-        if request.analysis_type == "population_risk":
+        if req_data.analysis_type == "population_risk":
             # 使用voucher_risk_service进行AI分析（包含附件识别预处理）
             voucher_ids = [v["id"] for v in vouchers]
             filters = {"voucher_ids": voucher_ids} if voucher_ids else None
             risk_results = await voucher_risk_service.batch_analyze_vouchers(
-                project_id=request.project_id,
+                project_id=req_data.project_id,
                 filters=filters,
                 use_ai=True,
                 save_results=False  # 第二步不保存结果，只返回分析报告
             )
-            return _build_population_risk_response(request.project_id, vouchers, risk_results)
+            return _build_population_risk_response(req_data.project_id, vouchers, risk_results)
 
         # 普通风险分析
         assessments = await risk_analyzer.batch_analyze(vouchers)
@@ -489,7 +489,7 @@ async def analyze_vouchers(
         ]
 
         return AIAnalyzeResponse(
-            analysis_id=f"analysis_{request.project_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            analysis_id=f"analysis_{req_data.project_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
             status="completed",
             total_analyzed=len(vouchers),
             results=results
@@ -695,8 +695,8 @@ def _simplify_risk_factor(factor: str, max_length: int = 12) -> str:
 @router.post("/intelligent-sample", response_model=IntelligentSampleResponse)
 @limiter.limit("10/hour")  # 每小时最多10次智能抽样请求
 async def intelligent_sample(
-    http_request: Request,
-    request: AIIntelligentSampleRequest,
+    request: Request,
+    req_data: AIIntelligentSampleRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
     """
@@ -706,16 +706,16 @@ async def intelligent_sample(
     """
     # 验证项目
     with get_db_cursor() as cursor:
-        cursor.execute("SELECT id FROM projects WHERE id = ?", [request.project_id])
+        cursor.execute("SELECT id FROM projects WHERE id = ?", [req_data.project_id])
         if not cursor.fetchone():
             raise HTTPException(status_code=404, detail="项目不存在")
 
     try:
         # 执行智能抽样
         result = await intelligent_sampler.recommend_samples(
-            project_id=request.project_id,
-            sample_size=request.sample_size,
-            focus_areas=request.focus_areas
+            project_id=req_data.project_id,
+            sample_size=req_data.sample_size,
+            focus_areas=req_data.focus_areas
         )
 
         return IntelligentSampleResponse(
@@ -743,8 +743,8 @@ async def intelligent_sample(
 @router.post("/describe-voucher")
 @limiter.limit("30/hour")  # 每小时最多30次凭证理解请求
 async def describe_voucher(
-    http_request: Request,
-    request: VoucherUnderstandingRequest,
+    request: Request,
+    req_data: VoucherUnderstandingRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
     """
@@ -761,7 +761,7 @@ async def describe_voucher(
             FROM vouchers
             WHERE id = ?
             """,
-            [request.voucher_id]
+            [req_data.voucher_id]
         )
         row = cursor.fetchone()
 
@@ -781,10 +781,10 @@ async def describe_voucher(
 
         # 获取OCR文本
         ocr_text = None
-        if request.include_ocr:
+        if req_data.include_ocr:
             cursor.execute(
                 "SELECT raw_text FROM voucher_ocr_results WHERE voucher_id = ?",
-                [request.voucher_id]
+                [req_data.voucher_id]
             )
             ocr_row = cursor.fetchone()
             if ocr_row and ocr_row[0]:
@@ -802,7 +802,7 @@ async def describe_voucher(
         )
 
         return {
-            "voucher_id": request.voucher_id,
+            "voucher_id": req_data.voucher_id,
             "voucher": voucher,
             "understanding": result
         }
@@ -815,8 +815,8 @@ async def describe_voucher(
 @router.post("/semantic-search")
 @limiter.limit("60/hour")  # 每小时最多60次语义搜索请求
 async def semantic_search(
-    http_request: Request,
-    request: SemanticSearchRequest,
+    request: Request,
+    req_data: SemanticSearchRequest,
     current_user: UserInDB = Depends(get_current_user)
 ):
     """
@@ -826,13 +826,13 @@ async def semantic_search(
     """
     try:
         results = await semantic_search_service.search(
-            query=request.query,
-            project_id=request.project_id,
-            top_k=request.top_k
+            query=req_data.query,
+            project_id=req_data.project_id,
+            top_k=req_data.top_k
         )
 
         return {
-            "query": request.query,
+            "query": req_data.query,
             "total": len(results),
             "results": results
         }
@@ -845,7 +845,7 @@ async def semantic_search(
 @router.post("/projects/{project_id}/build-index")
 @limiter.limit("5/hour")  # 每小时最多5次索引构建请求（资源密集型）
 async def build_semantic_index(
-    http_request: Request,
+    request: Request,
     project_id: str,
     background_tasks: BackgroundTasks,
     current_user: UserInDB = Depends(get_current_user)
