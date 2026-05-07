@@ -43,6 +43,24 @@ def get_db() -> duckdb.DuckDBPyConnection:
 
                 _db_connection = duckdb.connect(str(db_path))
                 logger.info(f"数据库连接已建立: {db_path}")
+    else:
+        # 检查连接是否有效
+        try:
+            # 执行一个简单的查询来测试连接
+            _db_connection.execute("SELECT 1").fetchone()
+        except Exception as e:
+            logger.warning(f"数据库连接异常，重新连接: {str(e)}")
+            with _db_lock:
+                try:
+                    _db_connection.close()
+                except:
+                    pass
+                _db_connection = None
+                # 重新建立连接
+                db_path = Path(settings.DATABASE_PATH)
+                db_path.parent.mkdir(parents=True, exist_ok=True)
+                _db_connection = duckdb.connect(str(db_path))
+                logger.info(f"数据库连接已重建: {db_path}")
     return _db_connection
 
 
