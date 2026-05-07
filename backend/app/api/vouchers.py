@@ -11,7 +11,7 @@ import json
 import os
 import logging
 
-from app.core.database import get_db_cursor, get_db, with_db_lock
+from app.core.database import get_db_cursor, get_db, with_db_lock, close_db
 from app.core.config import settings
 from app.core.auth import get_current_user, UserInDB
 from app.services.llm_service import llm_service, get_recognition_service
@@ -784,8 +784,10 @@ async def delete_attachment(
                     logger.warning(f"删除文件失败 {full_path}: {str(e)}")
                     # 文件删除失败继续执行，至少删除数据库记录
 
-            # 删除数据库记录（处理索引问题）
-            max_retries = 2
+            # 删除数据库记录（处理索引问题和数据库无效状态）
+            max_retries = 3
+            import time
+
             for attempt in range(max_retries):
                 try:
                     cursor.execute("DELETE FROM voucher_attachments WHERE id = ?", [attachment_id])
@@ -795,9 +797,28 @@ async def delete_attachment(
                     error_msg = str(e)
                     logger.warning(f"删除附件记录失败 (尝试 {attempt + 1}/{max_retries}): {error_msg}")
 
+                    # 检查是否是数据库无效错误
+                    if "database has been invalidated" in error_msg.lower() or "invalidated" in error_msg.lower():
+                        logger.warning("数据库被标记为无效，尝试重新连接...")
+                        try:
+                            # 关闭当前数据库连接
+                            close_db()
+                            # 短暂等待
+                            time.sleep(0.2)
+                            # 重新获取游标（这将触发重新连接）
+                            cursor = get_db().cursor()
+                            # 再次尝试删除
+                            cursor.execute("DELETE FROM voucher_attachments WHERE id = ?", [attachment_id])
+                            get_db().commit()
+                            logger.info("数据库重新连接后删除成功")
+                            break
+                        except Exception as reconnect_error:
+                            logger.error(f"数据库重新连接后删除失败: {str(reconnect_error)}")
+                            # 继续其他恢复尝试
+
                     if attempt < max_retries - 1:
                         # 检查是否是索引错误
-                        if "index" in error_msg.lower() or "索引" in error_msg:
+                        if "index" in error_msg.lower() or "索引" in error_msg or "failed to delete all rows from index" in error_msg.lower():
                             try:
                                 # 尝试删除并重新创建索引
                                 logger.info("尝试修复附件表索引...")
@@ -816,7 +837,6 @@ async def delete_attachment(
                                 # 继续尝试其他方法
 
                         # 短暂等待后重试
-                        import time
                         time.sleep(0.1 * (attempt + 1))
                     else:
                         logger.error(f"删除附件记录失败，已达到最大重试次数: {error_msg}")
@@ -1143,45 +1163,132 @@ async def delete_voucher(
     current_user: UserInDB = Depends(get_current_user)
 ):
     """删除单个凭证"""
-    with get_db_cursor() as cursor:
-        # 查询凭证（不强制要求project_id匹配，因为voucher_id已是主键）
-        cursor.execute(
-            "SELECT id, attachment_path FROM vouchers WHERE id = ?",
-            [voucher_id]
-        )
-        row = cursor.fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="凭证不存在")
+    import time
 
-        attachment_path = row[1]
+    # 使用数据库锁确保线程安全
+    with with_db_lock():
+        with get_db_cursor() as cursor:
+            # 查询凭证（不强制要求project_id匹配，因为voucher_id已是主键）
+            cursor.execute(
+                "SELECT id, attachment_path FROM vouchers WHERE id = ?",
+                [voucher_id]
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="凭证不存在")
 
-        # 获取附件文件路径列表（用于删除物理文件）
-        cursor.execute(
-            "SELECT file_path FROM voucher_attachments WHERE voucher_id = ?",
-            [voucher_id]
-        )
-        attachment_paths = [r[0] for r in cursor.fetchall()]
+            attachment_path = row[1]
 
-        # 删除关联数据
-        cursor.execute("DELETE FROM voucher_attachments WHERE voucher_id = ?", [voucher_id])
-        cursor.execute("DELETE FROM voucher_ocr_results WHERE voucher_id = ?", [voucher_id])
-        cursor.execute("DELETE FROM voucher_categories WHERE voucher_id = ?", [voucher_id])
-        cursor.execute("DELETE FROM samples WHERE voucher_id = ?", [voucher_id])
-        cursor.execute("DELETE FROM vouchers WHERE id = ?", [voucher_id])
+            # 获取附件文件路径列表（用于删除物理文件）
+            cursor.execute(
+                "SELECT file_path FROM voucher_attachments WHERE voucher_id = ?",
+                [voucher_id]
+            )
+            attachment_paths = [r[0] for r in cursor.fetchall()]
 
-        get_db().commit()
+            # 删除关联数据（带错误处理和恢复）
+            delete_operations = [
+                ("DELETE FROM voucher_attachments WHERE voucher_id = ?", [voucher_id]),
+                ("DELETE FROM voucher_ocr_results WHERE voucher_id = ?", [voucher_id]),
+                ("DELETE FROM voucher_categories WHERE voucher_id = ?", [voucher_id]),
+                ("DELETE FROM samples WHERE voucher_id = ?", [voucher_id]),
+                ("DELETE FROM vouchers WHERE id = ?", [voucher_id])
+            ]
 
-    # 删除旧的附件文件（兼容旧数据）
-    if attachment_path:
-        full_path = os.path.join(settings.ATTACHMENT_PATH, attachment_path)
-        if os.path.exists(full_path):
-            os.remove(full_path)
+            for sql, params in delete_operations:
+                max_retries = 3
+                for attempt in range(max_retries):
+                    try:
+                        cursor.execute(sql, params)
+                        break  # 成功则退出重试循环
+                    except Exception as e:
+                        error_msg = str(e)
+                        logger.warning(f"删除操作失败 (SQL: {sql}, 尝试 {attempt + 1}/{max_retries}): {error_msg}")
 
-    # 删除voucher_attachments表中的物理文件
-    for file_path in attachment_paths:
-        full_path = os.path.join(settings.ATTACHMENT_PATH, file_path)
-        if os.path.exists(full_path):
-            os.remove(full_path)
+                        # 检查是否是数据库无效错误
+                        if "database has been invalidated" in error_msg.lower() or "invalidated" in error_msg.lower():
+                            logger.warning("数据库被标记为无效，尝试重新连接...")
+                            try:
+                                # 关闭当前数据库连接
+                                close_db()
+                                # 短暂等待
+                                time.sleep(0.2)
+                                # 重新获取游标（这将触发重新连接）
+                                cursor = get_db().cursor()
+                                # 重新查询凭证和附件路径（因为游标已重置）
+                                cursor.execute(
+                                    "SELECT id, attachment_path FROM vouchers WHERE id = ?",
+                                    [voucher_id]
+                                )
+                                row = cursor.fetchone()
+                                if not row:
+                                    raise HTTPException(status_code=404, detail="凭证不存在")
+                                cursor.execute(
+                                    "SELECT file_path FROM voucher_attachments WHERE voucher_id = ?",
+                                    [voucher_id]
+                                )
+                                attachment_paths = [r[0] for r in cursor.fetchall()]
+                                # 重新尝试当前操作
+                                cursor.execute(sql, params)
+                                logger.info("数据库重新连接后操作成功")
+                                break
+                            except Exception as reconnect_error:
+                                logger.error(f"数据库重新连接后操作失败: {str(reconnect_error)}")
+                                # 如果重新连接后仍然失败，继续重试
+
+                        if attempt < max_retries - 1:
+                            # 检查是否是索引错误
+                            if "index" in error_msg.lower() or "索引" in error_msg or "failed to delete all rows from index" in error_msg.lower():
+                                try:
+                                    logger.info("尝试修复相关索引...")
+                                    # 尝试修复可能的索引问题
+                                    cursor.execute("DROP INDEX IF EXISTS idx_attachments_voucher_id")
+                                    cursor.execute("DROP INDEX IF EXISTS idx_ocr_results_voucher_id")
+                                    cursor.execute("DROP INDEX IF EXISTS idx_categories_voucher_id")
+                                    cursor.execute("DROP INDEX IF EXISTS idx_samples_voucher_id")
+                                    get_db().commit()
+                                    # 再次尝试
+                                    cursor.execute(sql, params)
+                                    get_db().commit()
+                                    # 重新创建索引
+                                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_attachments_voucher_id ON voucher_attachments(voucher_id)")
+                                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_ocr_results_voucher_id ON voucher_ocr_results(voucher_id)")
+                                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_categories_voucher_id ON voucher_categories(voucher_id)")
+                                    cursor.execute("CREATE INDEX IF NOT EXISTS idx_samples_voucher_id ON samples(voucher_id)")
+                                    get_db().commit()
+                                    logger.info("索引修复成功")
+                                    break
+                                except Exception as repair_error:
+                                    logger.error(f"索引修复失败: {str(repair_error)}")
+                                    # 继续尝试其他方法
+
+                            # 短暂等待后重试
+                            time.sleep(0.1 * (attempt + 1))
+                        else:
+                            logger.error(f"删除操作失败，已达到最大重试次数: {error_msg}")
+                            raise HTTPException(
+                                status_code=500,
+                                detail=f"删除凭证失败: {error_msg}"
+                            )
+
+            get_db().commit()
+
+    # 删除物理文件（在事务之外，避免影响数据库操作）
+    try:
+        # 删除旧的附件文件（兼容旧数据）
+        if attachment_path:
+            full_path = os.path.join(settings.ATTACHMENT_PATH, attachment_path)
+            if os.path.exists(full_path):
+                os.remove(full_path)
+
+        # 删除voucher_attachments表中的物理文件
+        for file_path in attachment_paths:
+            full_path = os.path.join(settings.ATTACHMENT_PATH, file_path)
+            if os.path.exists(full_path):
+                os.remove(full_path)
+    except Exception as file_error:
+        logger.warning(f"删除物理文件失败: {str(file_error)}")
+        # 文件删除失败不影响数据库操作，继续执行
 
     return {"message": "删除成功", "voucher_id": voucher_id}
 
