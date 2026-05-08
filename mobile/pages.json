@@ -1,9 +1,22 @@
 {
   "pages": [
     {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/index/index",
       "style": {
         "navigationBarTitleText": "AI审计抽凭"
+      }
+    },
+    {
+      "path": "pages/project/list",
+      "style": {
+        "navigationBarTitleText": "项目列表"
       }
     },
     {
@@ -16,6 +29,12 @@
       "path": "pages/vouchers/list",
       "style": {
         "navigationBarTitleText": "凭证列表"
+      }
+    },
+    {
+      "path": "pages/vouchers/detail",
+      "style": {
+        "navigationBarTitleText": "凭证详情"
       }
     },
     {
@@ -40,6 +59,12 @@
       "path": "pages/task/index",
       "style": {
         "navigationBarTitleText": "我的任务"
+      }
+    },
+    {
+      "path": "pages/task/detail",
+      "style": {
+        "navigationBarTitleText": "任务详情"
       }
     },
     {

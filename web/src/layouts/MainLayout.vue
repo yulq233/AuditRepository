@@ -119,6 +119,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Download } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
@@ -135,10 +136,10 @@ const handleCommand = (command) => {
       router.push('/login')
       break
     case 'profile':
-      // TODO: 跳转个人中心
+      ElMessage.info('个人中心功能开发中')
       break
     case 'settings':
-      // TODO: 跳转设置
+      ElMessage.info('设置功能开发中')
       break
   }
 }
