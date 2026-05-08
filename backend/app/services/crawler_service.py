@@ -1,17 +1,21 @@
 """
 爬虫服务模块
-提供测试数据生成和模拟爬取功能
+提供测试数据生成、Excel导入和模拟爬取功能
 """
 import uuid
 import random
 import asyncio
 import os
+import json
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Callable
 from dataclasses import dataclass, asdict
+import logging
 
-from app.core.database import get_db
+from app.core.database import get_db, get_db_cursor
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -236,37 +240,32 @@ class MockCrawlerService:
         y = table_top
         for row in rows:
             # 绘制单元格边框和背景
-            # 第一列(标签)
             draw.rectangle([(margin, y), (margin + col1_width, y + row_height)],
                           fill=color_header_bg, outline=color_border)
             draw.text((margin + 10, y + 8), row[0], font=font_label, fill=color_black)
 
-            # 第二列(内容)
             draw.rectangle([(margin + col1_width, y), (margin + col1_width + col2_width, y + row_height)],
                           fill='white', outline=color_border)
             draw.text((margin + col1_width + 10, y + 8), str(row[1]) if row[1] else '', font=font_content, fill=color_black)
 
-            # 第三列(标签) - 如果有
             if row[2]:
                 draw.rectangle([(margin + col1_width + col2_width, y),
                               (margin + col1_width + col2_width + col3_width, y + row_height)],
                              fill=color_header_bg, outline=color_border)
                 draw.text((margin + col1_width + col2_width + 10, y + 8), row[2], font=font_label, fill=color_black)
 
-                # 第四列(内容)
                 draw.rectangle([(margin + col1_width + col2_width + col3_width, y),
                               (width - margin, y + row_height)],
                              fill='white', outline=color_border)
                 draw.text((margin + col1_width + col2_width + col3_width + 10, y + 8),
                          str(row[3]) if row[3] else '', font=font_content, fill=color_black)
             else:
-                # 合并第三、四列
                 draw.rectangle([(margin + col1_width + col2_width, y), (width - margin, y + row_height)],
                               fill='white', outline=color_border)
 
             y += row_height
 
-        # 金额行（跨全行）
+        # 金额行
         draw.rectangle([(margin, y), (margin + col1_width, y + row_height)],
                       fill=color_header_bg, outline=color_border)
         draw.text((margin + 10, y + 8), '金额', font=font_label, fill=color_black)
@@ -280,7 +279,7 @@ class MockCrawlerService:
 
         y += row_height
 
-        # 摘要行（跨全行）
+        # 摘要行
         summary_height = 50
         draw.rectangle([(margin, y), (margin + col1_width, y + summary_height)],
                       fill=color_header_bg, outline=color_border)
@@ -288,7 +287,6 @@ class MockCrawlerService:
 
         draw.rectangle([(margin + col1_width, y), (width - margin, y + summary_height)],
                       fill='white', outline=color_border)
-        # 处理摘要换行
         desc = voucher.description
         if len(desc) > 40:
             desc1 = desc[:40]
@@ -306,22 +304,6 @@ class MockCrawlerService:
         draw.text((margin, footer_y + 25), '审核人：__________', font=font_content, fill=color_gray)
         draw.text((margin, footer_y + 50), '记账人：__________', font=font_content, fill=color_gray)
 
-        # 绘制印章
-        stamp_x = width - margin - 80
-        stamp_y = footer_y
-        stamp_radius = 35
-
-        # 印章外圆
-        draw.ellipse([(stamp_x - stamp_radius, stamp_y - stamp_radius),
-                     (stamp_x + stamp_radius, stamp_y + stamp_radius)],
-                    outline='#cc0000', width=2)
-
-        # 印章文字
-        stamp_text = "已审核"
-        stamp_bbox = draw.textbbox((0, 0), stamp_text, font=font_content)
-        stamp_text_width = stamp_bbox[2] - stamp_bbox[0]
-        draw.text((stamp_x - stamp_text_width // 2, stamp_y - 10), stamp_text, font=font_content, fill='#cc0000')
-
         # 保存图片
         img.save(file_path, 'PNG', quality=95)
 
@@ -336,9 +318,7 @@ class MockCrawlerService:
         count: int = 100,
         year: int = 2024
     ) -> CrawlerTask:
-        """
-        模拟爬取项目数据
-        """
+        """模拟爬取项目数据"""
         conn = get_db()
         task = CrawlerTask(
             id=task_id,
@@ -348,7 +328,6 @@ class MockCrawlerService:
             started_at=datetime.now()
         )
 
-        # 更新任务状态
         self._update_task(conn, task)
 
         try:
@@ -356,19 +335,16 @@ class MockCrawlerService:
             batch_size = 10
 
             for i in range(0, count, batch_size):
-                # 检查是否被停止
                 if not self._running_tasks.get(task_id, True):
                     task.status = 'stopped'
                     task.error_message = '任务被用户停止'
                     break
 
-                # 生成一批数据
                 batch_data = []
                 for j in range(min(batch_size, count - i)):
                     voucher = self.generate_mock_voucher(i + j + 1, year)
                     voucher_id = str(uuid.uuid4())
 
-                    # 生成附件文件
                     attachment_path = self.generate_mock_attachment(
                         project_id, voucher_id, voucher
                     )
@@ -389,17 +365,14 @@ class MockCrawlerService:
                         'updated_at': datetime.now().isoformat()
                     })
 
-                # 批量插入
                 if batch_data:
                     self._insert_vouchers(conn, batch_data)
                     success_count += len(batch_data)
 
-                    # 更新进度
                     task.success_count = success_count
                     task.total_count = count
                     self._update_task(conn, task)
 
-                # 模拟网络延迟
                 await asyncio.sleep(0.5)
 
             if task.status == 'running':
@@ -408,6 +381,7 @@ class MockCrawlerService:
             self._update_task(conn, task)
 
         except Exception as e:
+            logger.error(f"爬取任务失败: {e}")
             task.status = 'failed'
             task.error_message = str(e)
             task.finished_at = datetime.now()
@@ -449,9 +423,236 @@ class MockCrawlerService:
                 v['id'], v['project_id'], v['voucher_no'], v['voucher_date'],
                 v['amount'], v['subject_code'], v['subject_name'],
                 v['description'], v['counterparty'], v['attachment_path'],
-                v['raw_data'], v['created_at'], v['updated_at']
+                json.dumps(v['raw_data']), v['created_at'], v['updated_at']
             ))
         conn.commit()
+
+    def stop_task(self, task_id: str):
+        """停止任务"""
+        self._running_tasks[task_id] = False
+
+
+class ExcelImportCrawler:
+    """
+    Excel文件导入爬虫
+    从上传的Excel文件中解析凭证数据
+    """
+
+    def __init__(self):
+        self._running_tasks: Dict[str, bool] = {}
+
+    async def import_from_excel(
+        self,
+        task_id: str,
+        project_id: str,
+        file_path: str,
+        progress_callback: Optional[Callable] = None
+    ) -> CrawlerTask:
+        """
+        从Excel文件导入凭证数据
+
+        Args:
+            task_id: 任务ID
+            project_id: 项目ID
+            file_path: Excel文件路径
+            progress_callback: 进度回调函数
+        """
+        import pandas as pd
+
+        conn = get_db()
+        task = CrawlerTask(
+            id=task_id,
+            project_id=project_id,
+            platform='excel_import',
+            status='running',
+            started_at=datetime.now()
+        )
+
+        self._update_task(conn, task)
+
+        try:
+            # 读取Excel文件
+            df = pd.read_excel(file_path)
+            total_count = len(df)
+
+            # 标准化列名映射
+            column_mapping = {
+                '凭证号': 'voucher_no',
+                '凭证编号': 'voucher_no',
+                '日期': 'voucher_date',
+                '凭证日期': 'voucher_date',
+                '金额': 'amount',
+                '科目代码': 'subject_code',
+                '科目编码': 'subject_code',
+                '科目名称': 'subject_name',
+                '摘要': 'description',
+                '交易对手': 'counterparty',
+                '对方单位': 'counterparty',
+            }
+
+            # 重命名列
+            df = df.rename(columns={k: v for k, v in column_mapping.items() if k in df.columns})
+
+            # 必要列检查
+            required_cols = ['voucher_no', 'voucher_date', 'amount']
+            missing = [c for c in required_cols if c not in df.columns]
+            if missing:
+                raise ValueError(f"Excel缺少必要列: {missing}")
+
+            success_count = 0
+            batch_size = 50
+
+            for i in range(0, total_count, batch_size):
+                if not self._running_tasks.get(task_id, True):
+                    task.status = 'stopped'
+                    task.error_message = '任务被用户停止'
+                    break
+
+                batch = df.iloc[i:i+batch_size]
+                batch_data = []
+
+                for _, row in batch.iterrows():
+                    try:
+                        voucher_id = str(uuid.uuid4())
+
+                        # 处理日期
+                        voucher_date = row['voucher_date']
+                        if pd.notna(voucher_date):
+                            if isinstance(voucher_date, str):
+                                pass
+                            else:
+                                voucher_date = str(voucher_date)[:10]
+
+                        batch_data.append({
+                            'id': voucher_id,
+                            'project_id': project_id,
+                            'voucher_no': str(row['voucher_no']),
+                            'voucher_date': voucher_date,
+                            'amount': float(row['amount']) if pd.notna(row['amount']) else 0,
+                            'subject_code': str(row.get('subject_code', '')) if pd.notna(row.get('subject_code')) else '',
+                            'subject_name': str(row.get('subject_name', '')) if pd.notna(row.get('subject_name')) else '',
+                            'description': str(row.get('description', '')) if pd.notna(row.get('description')) else '',
+                            'counterparty': str(row.get('counterparty', '')) if pd.notna(row.get('counterparty')) else '',
+                            'attachment_path': None,
+                            'raw_data': row.to_dict(),
+                        })
+                    except Exception as e:
+                        logger.warning(f"解析行失败: {e}")
+                        continue
+
+                if batch_data:
+                    self._insert_vouchers(conn, batch_data)
+                    success_count += len(batch_data)
+
+                    task.success_count = success_count
+                    task.total_count = total_count
+                    self._update_task(conn, task)
+
+                    if progress_callback:
+                        progress_callback(success_count, total_count)
+
+            if task.status == 'running':
+                task.status = 'completed'
+            task.finished_at = datetime.now()
+            self._update_task(conn, task)
+
+        except Exception as e:
+            logger.error(f"Excel导入失败: {e}")
+            task.status = 'failed'
+            task.error_message = str(e)
+            task.finished_at = datetime.now()
+            self._update_task(conn, task)
+
+        finally:
+            self._running_tasks.pop(task_id, None)
+
+        return task
+
+    def _update_task(self, conn, task: CrawlerTask):
+        """更新任务状态"""
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE crawler_tasks
+            SET status = ?, total_count = ?, success_count = ?,
+                error_message = ?, started_at = ?, finished_at = ?
+            WHERE id = ?
+        """, (
+            task.status, task.total_count, task.success_count,
+            task.error_message,
+            task.started_at.isoformat() if task.started_at else None,
+            task.finished_at.isoformat() if task.finished_at else None,
+            task.id
+        ))
+        conn.commit()
+
+    def _insert_vouchers(self, conn, vouchers: List[Dict]):
+        """批量插入凭证"""
+        cursor = conn.cursor()
+        for v in vouchers:
+            cursor.execute("""
+                INSERT INTO vouchers
+                (id, project_id, voucher_no, voucher_date, amount,
+                 subject_code, subject_name, description, counterparty,
+                 attachment_path, raw_data, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                v['id'], v['project_id'], v['voucher_no'], v['voucher_date'],
+                v['amount'], v['subject_code'], v['subject_name'],
+                v['description'], v['counterparty'], v['attachment_path'],
+                json.dumps(v['raw_data'], default=str),
+                datetime.now().isoformat(),
+                datetime.now().isoformat()
+            ))
+        conn.commit()
+
+    def stop_task(self, task_id: str):
+        """停止任务"""
+        self._running_tasks[task_id] = False
+
+
+class PublicAuditPlatformCrawler:
+    """
+    公共审计平台爬虫基类
+
+    提供与公共审计平台对接的框架，具体平台实现需要继承此类
+    """
+
+    def __init__(self):
+        self._running_tasks: Dict[str, bool] = {}
+        self._session = None
+
+    async def login(self, username: str, password: str, platform_url: str) -> bool:
+        """
+        登录平台（子类实现具体逻辑）
+
+        Args:
+            username: 用户名
+            password: 密码
+            platform_url: 平台地址
+
+        Returns:
+            bool: 登录是否成功
+        """
+        raise NotImplementedError("子类需要实现login方法")
+
+    async def fetch_vouchers(
+        self,
+        task_id: str,
+        project_id: str,
+        params: Dict[str, Any]
+    ) -> CrawlerTask:
+        """
+        获取凭证数据（子类实现具体逻辑）
+
+        Args:
+            task_id: 任务ID
+            project_id: 项目ID
+            params: 查询参数
+
+        Returns:
+            CrawlerTask: 任务结果
+        """
+        raise NotImplementedError("子类需要实现fetch_vouchers方法")
 
     def stop_task(self, task_id: str):
         """停止任务"""
@@ -463,6 +664,7 @@ class CrawlerService:
 
     def __init__(self):
         self.mock_crawler = MockCrawlerService()
+        self.excel_crawler = ExcelImportCrawler()
         self._background_tasks: Dict[str, asyncio.Task] = {}
 
     def create_task(self, project_id: str, platform: str, count: int = 100) -> str:
@@ -486,15 +688,33 @@ class CrawlerService:
         project_id: str,
         platform: str = 'mock_platform',
         count: int = 100,
-        year: int = 2024
+        year: int = 2024,
+        file_path: str = None
     ):
         """启动爬取任务"""
         async def run_crawl():
-            await self.mock_crawler.crawl_project_data(
-                task_id, project_id, platform, count, year
-            )
+            if platform == 'excel_import':
+                if not file_path:
+                    raise ValueError("Excel导入需要提供file_path参数")
+                await self.excel_crawler.import_from_excel(
+                    task_id, project_id, file_path
+                )
+            else:
+                await self.mock_crawler.crawl_project_data(
+                    task_id, project_id, platform, count, year
+                )
 
         task = asyncio.create_task(run_crawl())
+        self._background_tasks[task_id] = task
+
+    def start_excel_import(self, task_id: str, project_id: str, file_path: str):
+        """启动Excel导入任务"""
+        async def run_import():
+            await self.excel_crawler.import_from_excel(
+                task_id, project_id, file_path
+            )
+
+        task = asyncio.create_task(run_import())
         self._background_tasks[task_id] = task
 
     def _format_datetime(self, dt) -> Optional[str]:
@@ -565,6 +785,7 @@ class CrawlerService:
         task = self._background_tasks.get(task_id)
         if task and not task.done():
             self.mock_crawler.stop_task(task_id)
+            self.excel_crawler.stop_task(task_id)
             task.cancel()
             return True
         return False
@@ -576,13 +797,32 @@ class CrawlerService:
                 'id': 'mock_platform',
                 'name': '模拟测试平台',
                 'description': '用于生成测试数据（含凭证附件）',
-                'supports_attachments': True
+                'supports_attachments': True,
+                'config_fields': [
+                    {'name': 'count', 'label': '生成数量', 'type': 'number', 'default': 100},
+                    {'name': 'year', 'label': '会计年度', 'type': 'number', 'default': 2024}
+                ]
+            },
+            {
+                'id': 'excel_import',
+                'name': 'Excel文件导入',
+                'description': '从Excel文件导入凭证数据',
+                'supports_attachments': False,
+                'config_fields': [
+                    {'name': 'file_path', 'label': '文件路径', 'type': 'file', 'required': True}
+                ]
             },
             {
                 'id': 'audit_public',
-                'name': '公共审计平台（模拟）',
-                'description': '模拟从公共审计平台获取凭证数据（含凭证附件）',
-                'supports_attachments': True
+                'name': '公共审计平台（开发中）',
+                'description': '对接真实公共审计平台（需配置登录凭证）',
+                'supports_attachments': True,
+                'config_fields': [
+                    {'name': 'platform_url', 'label': '平台地址', 'type': 'text', 'required': True},
+                    {'name': 'username', 'label': '用户名', 'type': 'text', 'required': True},
+                    {'name': 'password', 'label': '密码', 'type': 'password', 'required': True}
+                ],
+                'status': 'coming_soon'
             }
         ]
 

@@ -24,6 +24,14 @@
           <el-icon><Download /></el-icon>
           启动爬取
         </el-button>
+        <el-button
+          type="success"
+          @click="showImportDialog"
+          :disabled="!projectId"
+        >
+          <el-icon><Upload /></el-icon>
+          Excel导入
+        </el-button>
       </div>
     </div>
 
@@ -34,13 +42,17 @@
         :key="platform.id"
         class="platform-card"
         shadow="hover"
+        :class="{ 'disabled': platform.status === 'coming_soon' }"
       >
         <div class="platform-info">
           <div class="platform-icon">
             <el-icon size="32"><Download /></el-icon>
           </div>
           <div class="platform-details">
-            <h3>{{ platform.name }}</h3>
+            <h3>
+              {{ platform.name }}
+              <el-tag v-if="platform.status === 'coming_soon'" type="info" size="small">开发中</el-tag>
+            </h3>
             <p>{{ platform.description }}</p>
             <el-tag v-if="platform.supports_attachments" type="success" size="small">
               支持附件下载
@@ -82,7 +94,7 @@
                 :percentage="getProgress(row)"
                 :status="getProgressStatus(row.status)"
               />
-              <span class="progress-text">{{ row.success_count }} / {{ row.total_count }}</span>
+              <span class="progress-text">{{ row.success_count }} / {{ row.total_count || row.success_count }}</span>
             </div>
           </template>
         </el-table-column>
@@ -130,10 +142,11 @@
         <el-form-item label="目标平台">
           <el-select v-model="crawlForm.platform" style="width: 100%">
             <el-option
-              v-for="platform in platforms"
+              v-for="platform in availablePlatforms"
               :key="platform.id"
               :label="platform.name"
               :value="platform.id"
+              :disabled="platform.status === 'coming_soon'"
             />
           </el-select>
         </el-form-item>
@@ -162,7 +175,7 @@
           style="margin-top: 10px"
         >
           <template #title>
-            将生成 {{ crawlForm.count }} 条模拟凭证数据
+            将生成 {{ crawlForm.count }} 条模拟凭证数据（含凭证附件图片）
           </template>
         </el-alert>
       </el-form>
@@ -173,13 +186,65 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- Excel导入对话框 -->
+    <el-dialog
+      v-model="importDialogVisible"
+      title="Excel导入"
+      width="550px"
+    >
+      <el-form label-width="100px">
+        <el-form-item label="选择文件">
+          <el-upload
+            ref="uploadRef"
+            :auto-upload="false"
+            :limit="1"
+            accept=".xlsx,.xls,.csv"
+            :on-change="handleFileChange"
+            :on-exceed="handleExceed"
+            drag
+          >
+            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+            <div class="el-upload__text">
+              将Excel文件拖到此处，或<em>点击上传</em>
+            </div>
+            <template #tip>
+              <div class="el-upload__tip">
+                支持 .xlsx, .xls, .csv 格式
+              </div>
+            </template>
+          </el-upload>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" link @click="downloadTemplate">
+            <el-icon><Download /></el-icon>
+            下载导入模板
+          </el-button>
+        </el-form-item>
+        <el-alert
+          type="warning"
+          :closable="false"
+          show-icon
+        >
+          <template #title>
+            Excel需包含以下列：凭证号、凭证日期、金额（必填），科目代码、科目名称、摘要、交易对手（可选）
+          </template>
+        </el-alert>
+      </el-form>
+      <template #footer>
+        <el-button @click="importDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="importExcel" :loading="importing" :disabled="!selectedFile">
+          开始导入
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Download, Refresh } from '@element-plus/icons-vue'
+import { Download, Refresh, Upload, UploadFilled } from '@element-plus/icons-vue'
 import { crawlerApi, projectApi } from '@/api'
 
 // 项目选择
@@ -188,6 +253,11 @@ const projectId = ref(localStorage.getItem('currentProjectId') || '')
 
 // 平台列表
 const platforms = ref([])
+
+// 可用平台（排除开发中的）
+const availablePlatforms = computed(() => {
+  return platforms.value.filter(p => p.id !== 'excel_import')
+})
 
 // 任务列表
 const tasks = ref([])
@@ -201,6 +271,12 @@ const crawlForm = ref({
   year: '2024',
   count: 100
 })
+
+// Excel导入
+const importDialogVisible = ref(false)
+const importing = ref(false)
+const selectedFile = ref(null)
+const uploadRef = ref(null)
 
 // 轮询定时器
 let pollingTimer = null
@@ -254,6 +330,12 @@ const showStartDialog = () => {
   startDialogVisible.value = true
 }
 
+// 显示导入对话框
+const showImportDialog = () => {
+  selectedFile.value = null
+  importDialogVisible.value = true
+}
+
 // 启动爬取
 const startCrawl = async () => {
   starting.value = true
@@ -271,6 +353,51 @@ const startCrawl = async () => {
     ElMessage.error('启动失败: ' + (error.message || '未知错误'))
   } finally {
     starting.value = false
+  }
+}
+
+// 文件选择变化
+const handleFileChange = (file) => {
+  selectedFile.value = file.raw
+}
+
+// 超出限制
+const handleExceed = () => {
+  ElMessage.warning('只能上传一个文件')
+}
+
+// 下载模板
+const downloadTemplate = async () => {
+  try {
+    const blob = await crawlerApi.downloadTemplate()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'voucher_import_template.xlsx'
+    a.click()
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    ElMessage.error('下载模板失败')
+  }
+}
+
+// Excel导入
+const importExcel = async () => {
+  if (!selectedFile.value) {
+    ElMessage.warning('请先选择文件')
+    return
+  }
+
+  importing.value = true
+  try {
+    const result = await crawlerApi.importExcel(projectId.value, selectedFile.value)
+    ElMessage.success('导入任务已启动')
+    importDialogVisible.value = false
+    loadTasks()
+  } catch (error) {
+    ElMessage.error('导入失败: ' + (error.response?.data?.detail || error.message || '未知错误'))
+  } finally {
+    importing.value = false
   }
 }
 
@@ -317,7 +444,7 @@ const getStatusText = (status) => {
 
 // 计算进度
 const getProgress = (row) => {
-  if (!row.total_count) return 0
+  if (!row.total_count) return row.success_count > 0 ? 100 : 0
   return Math.round((row.success_count / row.total_count) * 100)
 }
 
@@ -337,7 +464,6 @@ const formatTime = (time) => {
 // 开始轮询
 const startPolling = () => {
   pollingTimer = setInterval(() => {
-    // 如果有运行中的任务，刷新列表
     const hasRunning = tasks.value.some(t => t.status === 'running' || t.status === 'pending')
     if (hasRunning && projectId.value) {
       loadTasks()
@@ -385,6 +511,7 @@ onUnmounted(() => {
   .header-actions {
     display: flex;
     align-items: center;
+    gap: 8px;
   }
 }
 
@@ -395,6 +522,10 @@ onUnmounted(() => {
   margin-bottom: 20px;
 
   .platform-card {
+    &.disabled {
+      opacity: 0.6;
+    }
+
     .platform-info {
       display: flex;
       gap: 16px;
@@ -416,6 +547,9 @@ onUnmounted(() => {
         h3 {
           margin: 0 0 8px 0;
           font-size: 16px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
 
         p {
@@ -445,7 +579,6 @@ onUnmounted(() => {
   }
 }
 
-// 表格横向滚动
 :deep(.el-table) {
   .el-table__body-wrapper {
     overflow-x: auto;

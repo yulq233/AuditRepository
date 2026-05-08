@@ -713,6 +713,22 @@ export const crawlerApi = {
   // 获取项目任务列表
   getTasks(projectId) {
     return request.get(`/crawler/tasks/${projectId}`)
+  },
+
+  // 从Excel导入
+  importExcel(projectId, file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request.post(`/crawler/import-excel?project_id=${projectId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+
+  // 下载导入模板
+  downloadTemplate() {
+    return request.get('/crawler/template', {
+      responseType: 'blob'
+    })
   }
 }
 
