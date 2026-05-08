@@ -13,7 +13,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.core.database import init_db, close_db, get_db_cursor
-from app.api import projects, vouchers, sampling, ai, auth, files, tasks, papers, audit_trail, crawler, compliance, risk
+from app.api import projects, vouchers, sampling, ai, auth, files, tasks, papers, audit_trail, crawler, compliance, risk, matching
 
 # 配置日志
 logging.basicConfig(
@@ -177,6 +177,7 @@ app.include_router(audit_trail.router, prefix="/api", tags=["审计轨迹"])
 app.include_router(crawler.router, prefix="/api/crawler", tags=["爬虫服务"])
 app.include_router(compliance.router, prefix="/api", tags=["合规检查"])
 app.include_router(risk.router, prefix="/api/projects/{project_id}/risk", tags=["风险画像"])
+app.include_router(matching.router, prefix="/api", tags=["三单匹配"])
 
 
 @app.get("/health", tags=["健康检查"])

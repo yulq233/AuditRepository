@@ -745,3 +745,23 @@ export const complianceApi = {
     return request.get(`/projects/${projectId}/compliance/statistics`)
   }
 }
+
+// 三单匹配API
+export const matchingApi = {
+  // 执行匹配
+  execute(projectId, params = {}) {
+    return request.post(`/projects/${projectId}/matching/execute`, null, { params })
+  },
+
+  // 获取匹配结果
+  getResults(projectId, status = null) {
+    return request.get(`/projects/${projectId}/matching/results`, {
+      params: { status }
+    })
+  },
+
+  // 清空匹配结果
+  clearResults(projectId) {
+    return request.delete(`/projects/${projectId}/matching/results`)
+  }
+}
