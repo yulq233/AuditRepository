@@ -19,6 +19,14 @@
       </view>
     </view>
 
+    <!-- 操作按钮 -->
+    <view class="action-bar">
+      <button type="primary" size="mini" @click="generateProfiles" :loading="generating">
+        {{ generating ? '生成中...' : '生成风险画像' }}
+      </button>
+      <button size="mini" @click="loadData">刷新</button>
+    </view>
+
     <!-- 科目风险列表 -->
     <view class="list-card">
       <view class="card-title">科目风险画像</view>
@@ -40,11 +48,22 @@
             <view class="score-value">{{ item.risk_score?.toFixed(1) }}</view>
           </view>
           <view class="profile-factors">
-            <view class="factor-tag" v-for="(factor, idx) in (item.risk_factors || []).slice(0, 3)" :key="idx">
-              {{ factor.name }}
+            <view class="factor-tag" v-for="(factor, idx) in getRiskFactors(item.risk_factors)" :key="idx">
+              {{ factor }}
             </view>
           </view>
         </view>
+      </view>
+
+      <view class="loading-tip" v-if="loading">
+        <uni-icons type="spinner-cycle" size="24" color="#409eff"></uni-icons>
+        <view>加载中...</view>
+      </view>
+
+      <view class="empty-tip" v-if="profiles.length === 0 && !loading">
+        <uni-icons type="info" size="48" color="#c0c4cc"></uni-icons>
+        <view>暂无风险画像数据</view>
+        <view class="empty-hint">点击上方"生成风险画像"按钮开始分析</view>
       </view>
     </view>
   </view>
@@ -52,11 +71,16 @@
 
 <script>
 import { ref, reactive, onMounted } from 'vue'
+import { showToast } from '@/utils/index'
+import { riskApi } from '@/src/api.js'
 
 export default {
   setup() {
     const riskStats = reactive({ high: 0, medium: 0, low: 0 })
     const profiles = ref([])
+    const loading = ref(false)
+    const generating = ref(false)
+    const projectId = ref(null)
 
     const getRiskText = (level) => {
       const map = { high: '高风险', medium: '中风险', low: '低风险' }
@@ -68,17 +92,75 @@ export default {
       return map[level] || '#909399'
     }
 
-    const loadData = async () => {
-      // TODO: 从API加载
-      profiles.value = [
-        { id: '1', subject_code: '1122', subject_name: '应收账款', risk_level: 'high', risk_score: 78.5, risk_factors: [{ name: '金额重要性' }, { name: '业务复杂' }] },
-        { id: '2', subject_code: '1405', subject_name: '库存商品', risk_level: 'medium', risk_score: 52.3, risk_factors: [{ name: '金额重要性' }] },
-        { id: '3', subject_code: '2202', subject_name: '应付账款', risk_level: 'medium', risk_score: 48.7, risk_factors: [{ name: '业务复杂' }] }
-      ]
+    const getRiskFactors = (factors) => {
+      if (!factors) return []
+      if (typeof factors === 'string') {
+        try {
+          factors = JSON.parse(factors)
+        } catch {
+          return []
+        }
+      }
+      if (Array.isArray(factors)) {
+        return factors.slice(0, 3).map(f => f.name || f)
+      }
+      return []
+    }
 
-      profiles.value.forEach(p => {
-        riskStats[p.risk_level]++
-      })
+    const loadData = async () => {
+      if (!projectId.value) {
+        projectId.value = uni.getStorageSync('currentProjectId')
+      }
+
+      if (!projectId.value) {
+        showToast('请先选择项目')
+        return
+      }
+
+      loading.value = true
+      try {
+        const res = await riskApi.getSubjects(projectId.value)
+        profiles.value = res || []
+
+        // 统计风险等级
+        riskStats.high = 0
+        riskStats.medium = 0
+        riskStats.low = 0
+        profiles.value.forEach(p => {
+          if (p.risk_level && riskStats.hasOwnProperty(p.risk_level)) {
+            riskStats[p.risk_level]++
+          }
+        })
+      } catch (e) {
+        console.error('加载风险画像失败:', e)
+        showToast('加载失败')
+      } finally {
+        loading.value = false
+      }
+    }
+
+    const generateProfiles = async () => {
+      if (!projectId.value) {
+        projectId.value = uni.getStorageSync('currentProjectId')
+      }
+
+      if (!projectId.value) {
+        showToast('请先选择项目')
+        return
+      }
+
+      generating.value = true
+      try {
+        showToast('正在生成风险画像...')
+        await riskApi.generateSubjects(projectId.value)
+        showToast('生成完成')
+        await loadData()
+      } catch (e) {
+        console.error('生成风险画像失败:', e)
+        showToast('生成失败')
+      } finally {
+        generating.value = false
+      }
     }
 
     onMounted(() => {
@@ -88,8 +170,13 @@ export default {
     return {
       riskStats,
       profiles,
+      loading,
+      generating,
       getRiskText,
-      getRiskColor
+      getRiskColor,
+      getRiskFactors,
+      loadData,
+      generateProfiles
     }
   }
 }
@@ -136,6 +223,12 @@ export default {
   color: #606266;
 }
 
+.action-bar {
+  display: flex;
+  gap: 20rpx;
+  padding: 0 0 20rpx;
+}
+
 .list-card {
   background: #fff;
   border-radius: 16rpx;
@@ -169,6 +262,27 @@ export default {
   margin-top: 4rpx;
 }
 
+.risk-tag {
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+}
+
+.risk-tag.high {
+  background: #fef0f0;
+  color: #f56c6c;
+}
+
+.risk-tag.medium {
+  background: #fdf6ec;
+  color: #e6a23c;
+}
+
+.risk-tag.low {
+  background: #f0f9eb;
+  color: #67c23a;
+}
+
 .profile-score {
   display: flex;
   align-items: center;
@@ -196,6 +310,7 @@ export default {
 
 .profile-factors {
   display: flex;
+  flex-wrap: wrap;
   gap: 8rpx;
 }
 
@@ -205,5 +320,25 @@ export default {
   border-radius: 4rpx;
   font-size: 22rpx;
   color: #606266;
+}
+
+.loading-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx;
+  color: #909399;
+}
+
+.empty-tip {
+  text-align: center;
+  padding: 60rpx 0;
+  color: #909399;
+}
+
+.empty-hint {
+  font-size: 24rpx;
+  color: #c0c4cc;
+  margin-top: 16rpx;
 }
 </style>

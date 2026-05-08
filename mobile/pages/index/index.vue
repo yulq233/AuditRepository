@@ -66,9 +66,13 @@
             <view :class="['status-tag', item.status]">{{ getStatusText(item.status) }}</view>
           </view>
         </view>
-        <view class="empty-tip" v-if="projects.length === 0">
+        <view class="empty-tip" v-if="projects.length === 0 && !loading">
           <uni-icons type="info" size="48" color="#c0c4cc"></uni-icons>
           <view class="empty-text">暂无项目</view>
+        </view>
+        <view class="loading-tip" v-if="loading">
+          <uni-icons type="spinner-cycle" size="24" color="#409eff"></uni-icons>
+          <view>加载中...</view>
         </view>
       </view>
     </view>
@@ -77,7 +81,8 @@
 
 <script>
 import { ref, reactive, onMounted } from 'vue'
-import { getStatusText, navigateTo } from '@/utils/index'
+import { getStatusText, navigateTo, showToast } from '@/utils/index'
+import { projectApi, taskApi } from '@/src/api.js'
 
 export default {
   setup() {
@@ -88,21 +93,43 @@ export default {
     })
 
     const projects = ref([])
+    const loading = ref(false)
+    const currentProjectId = ref(null)
 
     const goProject = (item) => {
+      currentProjectId.value = item.id
+      uni.setStorageSync('currentProjectId', item.id)
       uni.navigateTo({ url: `/pages/project/detail?id=${item.id}` })
     }
 
     const loadData = async () => {
-      // TODO: 从API加载数据
-      // 模拟数据
-      projects.value = [
-        { id: '1', name: '2024年度审计项目', description: '年度财务报表审计', status: 'active' },
-        { id: '2', name: 'XX公司专项审计', description: '专项审计项目', status: 'active' }
-      ]
-      stats.projectCount = 2
-      stats.taskCount = 5
-      stats.sampleCount = 128
+      loading.value = true
+      try {
+        // 加载项目列表
+        const res = await projectApi.getList({ page: 1, page_size: 10 })
+        projects.value = res.items || []
+        stats.projectCount = res.total || projects.value.length
+
+        // 设置当前项目
+        if (projects.value.length > 0) {
+          currentProjectId.value = projects.value[0].id
+          uni.setStorageSync('currentProjectId', currentProjectId.value)
+
+          // 加载任务进度
+          try {
+            const progress = await taskApi.getProgress(currentProjectId.value)
+            stats.taskCount = progress.pending_count || 0
+            stats.sampleCount = progress.total_samples || 0
+          } catch (e) {
+            console.log('加载任务进度失败', e)
+          }
+        }
+      } catch (e) {
+        console.error('加载数据失败:', e)
+        showToast('加载数据失败')
+      } finally {
+        loading.value = false
+      }
     }
 
     onMounted(() => {
@@ -112,6 +139,7 @@ export default {
     return {
       stats,
       projects,
+      loading,
       getStatusText,
       navigateTo,
       goProject
@@ -162,5 +190,13 @@ export default {
 .list-action {
   flex-shrink: 0;
   margin-left: 16rpx;
+}
+
+.loading-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx;
+  color: #909399;
 }
 </style>

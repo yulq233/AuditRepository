@@ -2,7 +2,7 @@
   <view class="container">
     <!-- 搜索 -->
     <view class="search-bar">
-      <uni-search-bar placeholder="搜索凭证号/摘要" @confirm="onSearch" />
+      <uni-search-bar placeholder="搜索凭证号/摘要" @confirm="onSearch" v-model="keyword" />
     </view>
 
     <!-- 凭证列表 -->
@@ -14,21 +14,30 @@
         </view>
         <view class="voucher-body">
           <view class="voucher-subject">{{ item.subject_name }}</view>
-          <view class="voucher-desc">{{ item.description }}</view>
+          <view class="voucher-desc">{{ item.description || '-' }}</view>
         </view>
         <view class="voucher-footer">
           <view class="voucher-amount" :class="{ large: item.amount > 100000 }">
             ¥{{ formatAmount(item.amount) }}
           </view>
+          <view class="risk-tag" v-if="item.risk_level" :class="item.risk_level">
+            {{ getRiskText(item.risk_level) }}
+          </view>
         </view>
       </view>
 
-      <view class="load-more" @click="loadMore" v-if="hasMore">
+      <view class="load-more" @click="loadMore" v-if="hasMore && !loading">
         加载更多
       </view>
 
-      <view class="empty-tip" v-if="vouchers.length === 0">
-        暂无凭证
+      <view class="loading-tip" v-if="loading">
+        <uni-icons type="spinner-cycle" size="24" color="#409eff"></uni-icons>
+        <view>加载中...</view>
+      </view>
+
+      <view class="empty-tip" v-if="vouchers.length === 0 && !loading">
+        <uni-icons type="info" size="48" color="#c0c4cc"></uni-icons>
+        <view>暂无凭证</view>
       </view>
     </view>
   </view>
@@ -36,39 +45,78 @@
 
 <script>
 import { ref, onMounted } from 'vue'
+import { showToast, formatAmount as formatAmt } from '@/utils/index'
+import { voucherApi } from '@/src/api.js'
 
 export default {
   setup() {
     const vouchers = ref([])
     const hasMore = ref(true)
     const page = ref(1)
+    const pageSize = 20
+    const loading = ref(false)
+    const keyword = ref('')
+    const projectId = ref(null)
 
     const formatAmount = (amount) => {
-      if (!amount) return '0.00'
-      return amount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })
+      return formatAmt(amount)
+    }
+
+    const getRiskText = (level) => {
+      const map = { high: '高', medium: '中', low: '低' }
+      return map[level] || ''
     }
 
     const onSearch = (value) => {
+      keyword.value = value.value || ''
       page.value = 1
-      loadVouchers(value)
+      vouchers.value = []
+      hasMore.value = true
+      loadVouchers()
     }
 
-    const loadVouchers = async (keyword = '') => {
-      // TODO: 从API加载
-      vouchers.value = [
-        { id: '1', voucher_no: '记-001', voucher_date: '2024-03-01', subject_name: '银行存款', description: '收到货款', amount: 50000 },
-        { id: '2', voucher_no: '记-002', voucher_date: '2024-03-02', subject_name: '应收账款', description: '销售商品', amount: 120000 },
-        { id: '3', voucher_no: '记-003', voucher_date: '2024-03-03', subject_name: '管理费用', description: '办公费', amount: 5000 }
-      ]
+    const loadVouchers = async () => {
+      if (!projectId.value) {
+        projectId.value = uni.getStorageSync('currentProjectId')
+      }
+
+      if (!projectId.value) {
+        showToast('请先选择项目')
+        return
+      }
+
+      loading.value = true
+      try {
+        const res = await voucherApi.getList(projectId.value, {
+          page: page.value,
+          page_size: pageSize,
+          keyword: keyword.value
+        })
+
+        const items = res.items || []
+        if (page.value === 1) {
+          vouchers.value = items
+        } else {
+          vouchers.value = [...vouchers.value, ...items]
+        }
+
+        hasMore.value = items.length === pageSize
+      } catch (e) {
+        console.error('加载凭证失败:', e)
+        showToast('加载失败')
+      } finally {
+        loading.value = false
+      }
     }
 
     const loadMore = () => {
+      if (!hasMore.value || loading.value) return
       page.value++
-      // TODO: 加载更多
+      loadVouchers()
     }
 
     const goDetail = (item) => {
-      uni.navigateTo({ url: `/pages/vouchers/detail?id=${item.id}` })
+      uni.navigateTo({ url: `/pages/vouchers/detail?id=${item.id}&projectId=${projectId.value}` })
     }
 
     onMounted(() => {
@@ -78,7 +126,10 @@ export default {
     return {
       vouchers,
       hasMore,
+      loading,
+      keyword,
       formatAmount,
+      getRiskText,
       onSearch,
       loadMore,
       goDetail
@@ -129,11 +180,15 @@ export default {
 .voucher-desc {
   font-size: 24rpx;
   color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .voucher-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .voucher-amount {
@@ -146,10 +201,39 @@ export default {
   color: #f56c6c;
 }
 
+.risk-tag {
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+}
+
+.risk-tag.high {
+  background: #fef0f0;
+  color: #f56c6c;
+}
+
+.risk-tag.medium {
+  background: #fdf6ec;
+  color: #e6a23c;
+}
+
+.risk-tag.low {
+  background: #f0f9eb;
+  color: #67c23a;
+}
+
 .load-more {
   text-align: center;
   padding: 20rpx;
   color: #409eff;
+}
+
+.loading-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx;
+  color: #909399;
 }
 
 .empty-tip {
