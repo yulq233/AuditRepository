@@ -15,6 +15,10 @@
           <view class="status-tag" :class="project.status">{{ getStatusText(project.status) }}</view>
         </view>
       </view>
+      <view class="detail-row">
+        <view class="detail-label">创建时间</view>
+        <view class="detail-value">{{ formatDate(project.created_at) }}</view>
+      </view>
     </view>
 
     <!-- 统计数据 -->
@@ -48,11 +52,40 @@
         工作底稿
       </view>
     </view>
+
+    <!-- 最近抽样记录 -->
+    <view class="card">
+      <view class="card-header">
+        <view class="card-title">最近抽样</view>
+        <view class="card-more" @click="navigateTo('/pages/sampling/result')">查看全部</view>
+      </view>
+      <view class="record-list">
+        <view class="record-item" v-for="item in recentRecords" :key="item.id" @click="goRecord(item)">
+          <view class="record-info">
+            <view class="record-name">{{ item.rule_name || '抽样任务' }}</view>
+            <view class="record-time">{{ formatDate(item.created_at) }}</view>
+          </view>
+          <view class="record-stats">
+            <text>{{ item.sample_size }}个样本</text>
+          </view>
+        </view>
+        <view class="empty-tip" v-if="recentRecords.length === 0">
+          暂无抽样记录
+        </view>
+      </view>
+    </view>
+
+    <view class="loading-tip" v-if="loading">
+      <uni-icons type="spinner-cycle" size="24" color="#409eff"></uni-icons>
+      <view>加载中...</view>
+    </view>
   </view>
 </template>
 
 <script>
 import { ref, reactive, onMounted } from 'vue'
+import { showToast, formatDate as formatDateUtil } from '@/utils/index'
+import { projectApi, voucherApi, samplingApi, taskApi } from '@/src/api.js'
 
 export default {
   setup() {
@@ -62,43 +95,96 @@ export default {
       sampleCount: 0,
       completionRate: 0
     })
+    const recentRecords = ref([])
+    const loading = ref(false)
+    const projectId = ref(null)
 
     const getStatusText = (status) => {
       const map = { active: '进行中', completed: '已完成', archived: '已归档' }
       return map[status] || status
     }
 
+    const formatDate = (date) => {
+      return formatDateUtil(date, 'YYYY-MM-DD')
+    }
+
     const navigateTo = (url) => {
       uni.navigateTo({ url })
     }
 
-    const loadProject = async () => {
+    const goRecord = (item) => {
+      uni.navigateTo({ url: `/pages/sampling/result?id=${item.id}` })
+    }
+
+    const loadData = async () => {
       // 获取项目ID
       const pages = getCurrentPages()
       const currentPage = pages[pages.length - 1]
-      const projectId = currentPage.options?.id
+      projectId.value = currentPage.options?.id
 
-      // TODO: 从API加载
-      project.value = {
-        id: projectId || '1',
-        name: '2024年度审计项目',
-        description: '年度财务报表审计项目',
-        status: 'active'
+      if (!projectId.value) {
+        projectId.value = uni.getStorageSync('currentProjectId')
       }
-      stats.voucherCount = 1250
-      stats.sampleCount = 186
-      stats.completionRate = 68
+
+      if (!projectId.value) {
+        showToast('项目不存在')
+        return
+      }
+
+      // 保存当前项目ID
+      uni.setStorageSync('currentProjectId', projectId.value)
+
+      loading.value = true
+      try {
+        // 加载项目详情
+        const projectData = await projectApi.getDetail(projectId.value)
+        project.value = projectData || {}
+
+        // 加载凭证统计
+        try {
+          const voucherStats = await voucherApi.getPopulationStats(projectId.value)
+          stats.voucherCount = voucherStats.total_count || 0
+        } catch (e) {
+          console.log('加载凭证统计失败', e)
+        }
+
+        // 加载任务进度
+        try {
+          const progress = await taskApi.getProgress(projectId.value)
+          stats.sampleCount = progress.total_samples || 0
+          stats.completionRate = progress.completion_rate || 0
+        } catch (e) {
+          console.log('加载任务进度失败', e)
+        }
+
+        // 加载最近抽样记录
+        try {
+          const records = await samplingApi.getRecords(projectId.value)
+          recentRecords.value = (records.items || records || []).slice(0, 5)
+        } catch (e) {
+          console.log('加载抽样记录失败', e)
+        }
+      } catch (e) {
+        console.error('加载项目失败:', e)
+        showToast('加载失败')
+      } finally {
+        loading.value = false
+      }
     }
 
     onMounted(() => {
-      loadProject()
+      loadData()
     })
 
     return {
       project,
       stats,
+      recentRecords,
+      loading,
       getStatusText,
-      navigateTo
+      formatDate,
+      navigateTo,
+      goRecord
     }
   }
 }
@@ -134,6 +220,28 @@ export default {
   color: #303133;
 }
 
+.status-tag {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+}
+
+.status-tag.active {
+  background: #f0f9eb;
+  color: #67c23a;
+}
+
+.status-tag.completed {
+  background: #ecf5ff;
+  color: #409eff;
+}
+
+.status-tag.archived {
+  background: #f4f4f5;
+  color: #909399;
+}
+
 .stats-card {
   display: flex;
   justify-content: space-around;
@@ -162,6 +270,7 @@ export default {
 .action-card {
   display: flex;
   gap: 20rpx;
+  margin-bottom: 20rpx;
 }
 
 .action-btn {
@@ -175,5 +284,77 @@ export default {
   padding: 24rpx;
   border-radius: 12rpx;
   font-size: 26rpx;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #303133;
+}
+
+.card-more {
+  font-size: 24rpx;
+  color: #409eff;
+}
+
+.record-list {
+  margin-top: 10rpx;
+}
+
+.record-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.record-item:last-child {
+  border-bottom: none;
+}
+
+.record-name {
+  font-size: 28rpx;
+  color: #303133;
+}
+
+.record-time {
+  font-size: 24rpx;
+  color: #909399;
+  margin-top: 4rpx;
+}
+
+.record-stats {
+  font-size: 24rpx;
+  color: #409eff;
+}
+
+.empty-tip {
+  text-align: center;
+  padding: 30rpx;
+  color: #909399;
+  font-size: 26rpx;
+}
+
+.loading-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx;
+  color: #909399;
 }
 </style>
