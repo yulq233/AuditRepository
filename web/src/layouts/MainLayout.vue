@@ -28,17 +28,23 @@
           <span>凭证管理</span>
         </el-menu-item>
 
-        <el-sub-menu index="/sampling">
-          <template #title>
+        <div class="sub-menu-wrapper" @mouseenter="samplingOpen = true" @mouseleave="samplingOpen = false">
+          <div :class="['sub-menu-trigger', { 'is-active': isSamplingActive }]">
             <el-icon><DataAnalysis /></el-icon>
             <span>智能抽样</span>
-          </template>
-          <el-menu-item index="/sampling/wizard">抽样向导</el-menu-item>
-          <el-menu-item index="/sampling/risk-profile">风险画像</el-menu-item>
-          <el-menu-item index="/sampling/strategy">抽样策略</el-menu-item>
-          <el-menu-item index="/sampling/execute">执行抽样</el-menu-item>
-          <el-menu-item index="/sampling/results">抽样结果</el-menu-item>
-        </el-sub-menu>
+            <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+          </div>
+          <transition name="flyout">
+            <div v-show="samplingOpen" class="flyout-panel">
+              <div class="flyout-header">智能抽样</div>
+              <el-menu-item index="/sampling/wizard">抽样向导</el-menu-item>
+              <el-menu-item index="/sampling/risk-profile">风险画像</el-menu-item>
+              <el-menu-item index="/sampling/strategy">抽样策略</el-menu-item>
+              <el-menu-item index="/sampling/execute">执行抽样</el-menu-item>
+              <el-menu-item index="/sampling/results">抽样结果</el-menu-item>
+            </div>
+          </transition>
+        </div>
 
         <el-menu-item index="/matching">
           <el-icon><Connection /></el-icon>
@@ -116,9 +122,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Download } from '@element-plus/icons-vue'
+import { Download, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
@@ -127,6 +133,11 @@ const router = useRouter()
 const activeMenu = computed(() => route.path)
 const currentRoute = computed(() => route)
 const username = computed(() => localStorage.getItem('username') || '用户')
+const samplingOpen = ref(false)
+
+const isSamplingActive = computed(() =>
+  route.path.startsWith('/sampling')
+)
 
 const handleCommand = (command) => {
   switch (command) {
@@ -248,5 +259,116 @@ const handleCommand = (command) => {
   flex: 1;
   overflow-y: auto;
   background: $background-color;
+}
+
+// 侧边弹出子菜单
+.sub-menu-wrapper {
+  position: relative;
+}
+
+.sub-menu-trigger {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  line-height: 42px;
+  padding: 0 20px;
+  margin: 1px 0;
+  border-radius: $border-radius-md;
+  color: $sidebar-text;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  .el-icon:first-child {
+    margin-right: 10px;
+    font-size: 18px;
+  }
+
+  .arrow-icon {
+    margin-left: auto;
+    font-size: 12px;
+    transition: transform $transition-fast;
+  }
+
+  &:hover {
+    background: $sidebar-hover-bg;
+    color: $sidebar-text-hover;
+
+    .arrow-icon {
+      transform: translateX(2px);
+    }
+  }
+
+  &.is-active {
+    color: $sidebar-text-active;
+    background: $sidebar-active-bg;
+    border-left: 3px solid $sidebar-active-border;
+    border-radius: 0 $border-radius-md $border-radius-md 0;
+    padding-left: 17px;
+
+    .el-icon:first-child {
+      color: $sidebar-text-active;
+    }
+  }
+}
+
+.flyout-panel {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: 160px;
+  background: $background-white;
+  border: 1px solid $border-light;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+  padding: 6px;
+  z-index: 100;
+
+  .flyout-header {
+    padding: 8px 14px 6px;
+    font-size: 12px;
+    font-weight: $font-weight-semibold;
+    color: $text-placeholder;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  :deep(.el-menu-item) {
+    height: 36px;
+    line-height: 36px;
+    font-size: 13px;
+    border-radius: $border-radius-sm;
+    color: $sidebar-text;
+    background: transparent;
+    border-left: none;
+    padding-left: 14px !important;
+
+    &:hover {
+      background: $sidebar-hover-bg;
+      color: $sidebar-text-hover;
+    }
+
+    &.is-active {
+      color: $sidebar-text-active;
+      background: $sidebar-active-bg;
+      border-left: none;
+      padding-left: 14px;
+    }
+  }
+}
+
+// 弹出动画
+.flyout-enter-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.flyout-leave-active {
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
+.flyout-enter-from {
+  opacity: 0;
+  transform: translateX(-4px);
+}
+.flyout-leave-to {
+  opacity: 0;
+  transform: translateX(-4px);
 }
 </style>
