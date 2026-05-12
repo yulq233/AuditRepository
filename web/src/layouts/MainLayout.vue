@@ -6,81 +6,80 @@
         <el-icon class="logo-icon"><DocumentChecked /></el-icon>
         <span>AI审计抽凭</span>
       </div>
-      <el-menu
-        :default-active="activeMenu"
-        background-color="#ffffff"
-        text-color="#64748b"
-        active-text-color="#2563eb"
-        router
-      >
-        <el-menu-item index="/dashboard">
+
+      <nav class="sidebar-nav">
+        <router-link to="/dashboard" :class="['nav-item', { 'is-active': activeMenu === '/dashboard' }]">
           <el-icon><HomeFilled /></el-icon>
           <span>工作台</span>
-        </el-menu-item>
+        </router-link>
 
-        <el-menu-item index="/projects">
+        <router-link to="/projects" :class="['nav-item', { 'is-active': activeMenu === '/projects' }]">
           <el-icon><Folder /></el-icon>
           <span>项目管理</span>
-        </el-menu-item>
+        </router-link>
 
-        <el-menu-item index="/vouchers">
+        <router-link to="/vouchers" :class="['nav-item', { 'is-active': activeMenu === '/vouchers' }]">
           <el-icon><Document /></el-icon>
           <span>凭证管理</span>
-        </el-menu-item>
+        </router-link>
 
-        <div class="sub-menu-wrapper" @mouseenter="samplingOpen = true" @mouseleave="samplingOpen = false">
-          <div :class="['sub-menu-trigger', { 'is-active': isSamplingActive }]">
+        <div
+          class="nav-group"
+          @mouseenter="samplingOpen = true"
+          @mouseleave="samplingOpen = false"
+        >
+          <div :class="['nav-item', { 'is-active': isSamplingActive }]">
             <el-icon><DataAnalysis /></el-icon>
             <span>智能抽样</span>
-            <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+            <el-icon class="nav-arrow"><ArrowRight /></el-icon>
           </div>
           <transition name="flyout">
             <div v-show="samplingOpen" class="flyout-panel">
-              <div class="flyout-header">智能抽样</div>
-              <el-menu-item index="/sampling/wizard">抽样向导</el-menu-item>
-              <el-menu-item index="/sampling/risk-profile">风险画像</el-menu-item>
-              <el-menu-item index="/sampling/strategy">抽样策略</el-menu-item>
-              <el-menu-item index="/sampling/execute">执行抽样</el-menu-item>
-              <el-menu-item index="/sampling/results">抽样结果</el-menu-item>
+              <div class="flyout-title">智能抽样</div>
+              <router-link to="/sampling/wizard" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/wizard' }]">抽样向导</router-link>
+              <router-link to="/sampling/risk-profile" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/risk-profile' }]">风险画像</router-link>
+              <router-link to="/sampling/strategy" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/strategy' }]">抽样策略</router-link>
+              <router-link to="/sampling/execute" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/execute' }]">执行抽样</router-link>
+              <router-link to="/sampling/results" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/results' }]">抽样结果</router-link>
             </div>
           </transition>
         </div>
 
-        <el-menu-item index="/matching">
+        <router-link to="/matching" :class="['nav-item', { 'is-active': activeMenu === '/matching' }]">
           <el-icon><Connection /></el-icon>
           <span>三单匹配</span>
-        </el-menu-item>
+        </router-link>
 
-        <el-menu-item index="/compliance">
+        <router-link to="/compliance" :class="['nav-item', { 'is-active': activeMenu === '/compliance' }]">
           <el-icon><Warning /></el-icon>
           <span>合规检查</span>
-        </el-menu-item>
+        </router-link>
 
-        <el-menu-item index="/tasks">
+        <router-link to="/tasks" :class="['nav-item', { 'is-active': activeMenu === '/tasks' }]">
           <el-icon><List /></el-icon>
           <span>任务管理</span>
-        </el-menu-item>
+        </router-link>
 
-        <el-menu-item index="/papers">
+        <router-link to="/papers" :class="['nav-item', { 'is-active': activeMenu === '/papers' }]">
           <el-icon><Notebook /></el-icon>
           <span>工作底稿</span>
-        </el-menu-item>
+        </router-link>
 
-        <el-menu-item index="/audit-trail">
+        <router-link to="/audit-trail" :class="['nav-item', { 'is-active': activeMenu === '/audit-trail' }]">
           <el-icon><Clock /></el-icon>
           <span>审计轨迹</span>
-        </el-menu-item>
+        </router-link>
 
-        <el-menu-item index="/ai">
+        <router-link to="/ai" :class="['nav-item', { 'is-active': activeMenu === '/ai' }]">
           <el-icon><MagicStick /></el-icon>
           <span>AI服务</span>
-        </el-menu-item>
+        </router-link>
 
-        <el-menu-item index="/crawler">
+        <router-link to="/crawler" :class="['nav-item', { 'is-active': activeMenu === '/crawler' }]">
           <el-icon><Download /></el-icon>
           <span>数据爬取</span>
-        </el-menu-item>
-      </el-menu>
+        </router-link>
+      </nav>
     </div>
 
     <!-- 主内容区 -->
@@ -166,9 +165,10 @@ const handleCommand = (command) => {
 
 .sidebar {
   width: $sidebar-width;
-  background: linear-gradient(180deg, $sidebar-bg 0%, $sidebar-bg-end 100%);
+  background: $background-white;
   height: 100%;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   border-right: 1px solid $border-light;
 
   .logo {
@@ -179,7 +179,7 @@ const handleCommand = (command) => {
     color: $text-primary;
     font-size: 16px;
     font-weight: 700;
-    background: $background-white;
+    flex-shrink: 0;
     letter-spacing: 0.5px;
 
     .logo-icon {
@@ -188,34 +188,128 @@ const handleCommand = (command) => {
       color: $primary-color;
     }
   }
+}
 
-  :deep(.el-menu) {
-    border-right: none;
-    background: transparent;
-    padding: 6px;
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: visible;
+  padding: 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  line-height: 42px;
+  padding: 0 20px;
+  margin: 1px 0;
+  border-radius: $border-radius-md;
+  color: $sidebar-text;
+  cursor: pointer;
+  transition: all $transition-fast;
+  text-decoration: none;
+
+  .el-icon {
+    margin-right: 10px;
+    font-size: 18px;
+    flex-shrink: 0;
   }
 
-  :deep(.el-menu-item),
-  :deep(.el-sub-menu__title) {
-    color: $sidebar-text;
-    border-radius: $border-radius-md;
-    margin: 1px 0;
-    height: 42px;
-    line-height: 42px;
+  span {
+    flex: 1;
+    font-size: 14px;
+  }
 
-    &:hover {
-      background: $sidebar-hover-bg;
-      color: $sidebar-text-hover;
+  .nav-arrow {
+    margin-right: 0;
+    font-size: 12px;
+    transition: transform $transition-fast;
+  }
+
+  &:hover {
+    background: $sidebar-hover-bg;
+    color: $sidebar-text-hover;
+
+    .nav-arrow {
+      transform: translateX(2px);
     }
   }
 
-  :deep(.el-menu-item.is-active) {
+  &.is-active {
     color: $sidebar-text-active;
     background: $sidebar-active-bg;
     border-left: 3px solid $sidebar-active-border;
     border-radius: 0 $border-radius-md $border-radius-md 0;
     padding-left: 17px;
   }
+}
+
+// 子菜单容器
+.nav-group {
+  position: relative;
+}
+
+// 右侧弹出面板
+.flyout-panel {
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 0;
+  width: 160px;
+  background: $background-white;
+  border: 1px solid $border-light;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+  padding: 6px;
+  z-index: 200;
+
+  .flyout-title {
+    padding: 8px 14px 6px;
+    font-size: 11px;
+    font-weight: $font-weight-semibold;
+    color: $text-placeholder;
+    letter-spacing: 0.5px;
+  }
+}
+
+.flyout-item {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  line-height: 36px;
+  padding: 0 14px;
+  border-radius: $border-radius-sm;
+  font-size: 13px;
+  color: $sidebar-text;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $sidebar-hover-bg;
+    color: $sidebar-text-hover;
+  }
+
+  &.is-active {
+    color: $sidebar-text-active;
+    background: $sidebar-active-bg;
+  }
+}
+
+// 弹出动画
+.flyout-enter-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.flyout-leave-active {
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
+.flyout-enter-from {
+  opacity: 0;
+  transform: translateX(-4px);
+}
+.flyout-leave-to {
+  opacity: 0;
+  transform: translateX(-4px);
 }
 
 .main-container {
@@ -259,116 +353,5 @@ const handleCommand = (command) => {
   flex: 1;
   overflow-y: auto;
   background: $background-color;
-}
-
-// 侧边弹出子菜单
-.sub-menu-wrapper {
-  position: relative;
-}
-
-.sub-menu-trigger {
-  display: flex;
-  align-items: center;
-  height: 42px;
-  line-height: 42px;
-  padding: 0 20px;
-  margin: 1px 0;
-  border-radius: $border-radius-md;
-  color: $sidebar-text;
-  cursor: pointer;
-  transition: all $transition-fast;
-
-  .el-icon:first-child {
-    margin-right: 10px;
-    font-size: 18px;
-  }
-
-  .arrow-icon {
-    margin-left: auto;
-    font-size: 12px;
-    transition: transform $transition-fast;
-  }
-
-  &:hover {
-    background: $sidebar-hover-bg;
-    color: $sidebar-text-hover;
-
-    .arrow-icon {
-      transform: translateX(2px);
-    }
-  }
-
-  &.is-active {
-    color: $sidebar-text-active;
-    background: $sidebar-active-bg;
-    border-left: 3px solid $sidebar-active-border;
-    border-radius: 0 $border-radius-md $border-radius-md 0;
-    padding-left: 17px;
-
-    .el-icon:first-child {
-      color: $sidebar-text-active;
-    }
-  }
-}
-
-.flyout-panel {
-  position: absolute;
-  left: 100%;
-  top: 0;
-  width: 160px;
-  background: $background-white;
-  border: 1px solid $border-light;
-  border-radius: $border-radius-lg;
-  box-shadow: $shadow-lg;
-  padding: 6px;
-  z-index: 100;
-
-  .flyout-header {
-    padding: 8px 14px 6px;
-    font-size: 12px;
-    font-weight: $font-weight-semibold;
-    color: $text-placeholder;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-
-  :deep(.el-menu-item) {
-    height: 36px;
-    line-height: 36px;
-    font-size: 13px;
-    border-radius: $border-radius-sm;
-    color: $sidebar-text;
-    background: transparent;
-    border-left: none;
-    padding-left: 14px !important;
-
-    &:hover {
-      background: $sidebar-hover-bg;
-      color: $sidebar-text-hover;
-    }
-
-    &.is-active {
-      color: $sidebar-text-active;
-      background: $sidebar-active-bg;
-      border-left: none;
-      padding-left: 14px;
-    }
-  }
-}
-
-// 弹出动画
-.flyout-enter-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-.flyout-leave-active {
-  transition: opacity 0.1s ease, transform 0.1s ease;
-}
-.flyout-enter-from {
-  opacity: 0;
-  transform: translateX(-4px);
-}
-.flyout-leave-to {
-  opacity: 0;
-  transform: translateX(-4px);
 }
 </style>
