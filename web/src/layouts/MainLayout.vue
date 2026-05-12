@@ -131,7 +131,11 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Download, ArrowRight } from '@element-plus/icons-vue'
+import {
+  Download, ArrowRight, HomeFilled, Folder, Document,
+  DataAnalysis, Connection, Warning, List, Notebook,
+  Clock, MagicStick, DocumentChecked
+} from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
