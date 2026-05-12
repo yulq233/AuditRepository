@@ -513,7 +513,7 @@ const getFileIcon = (type) => {
 const getFileIconColor = (type) => {
   if (['.jpg', '.jpeg', '.png', '.bmp'].includes(type)) return '#10b981'
   if (type === '.pdf') return '#ef4444'
-  return '#6366f1'
+  return '#2563eb'
 }
 
 const loadVouchers = async () => {
@@ -1120,8 +1120,8 @@ onMounted(async () => {
       transition: all 0.2s;
 
       &:hover {
-        border-color: #6366f1;
-        background: #f5f3ff;
+        border-color: #2563eb;
+        background: #eff6ff;
       }
     }
 
@@ -1140,7 +1140,7 @@ onMounted(async () => {
         margin: 0;
 
         em {
-          color: #6366f1;
+          color: #2563eb;
           font-style: normal;
         }
       }

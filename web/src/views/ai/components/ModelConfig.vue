@@ -355,7 +355,7 @@ onMounted(() => {
           align-items: center;
           justify-content: center;
 
-          &.general { background: #409eff; }
+          &.general { background: #2563eb; }
           &.recognition { background: #67c23a; }
           &.risk_analysis { background: #e6a23c; }
         }
@@ -424,8 +424,8 @@ onMounted(() => {
       }
 
       &.selected {
-        border-color: #409eff;
-        background: #ecf5ff;
+        border-color: #2563eb;
+        background: #dbeafe;
       }
 
       &:hover:not(.disabled) {

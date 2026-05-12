@@ -365,7 +365,7 @@ const getFileIcon = (type) => {
 const getFileIconColor = (type) => {
   if (['.jpg', '.jpeg', '.png', '.bmp'].includes(type)) return '#67c23a'
   if (type === '.pdf') return '#f56c6c'
-  return '#409eff'
+  return '#3b82f6'
 }
 
 // 格式化关键信息为JSON格式

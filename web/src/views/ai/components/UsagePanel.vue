@@ -187,7 +187,7 @@ const renderProviderChart = () => {
   providers.forEach(([name, data]) => {
     const calls = data.calls || data || 0
     const percent = summary.total_calls > 0 ? (calls / summary.total_calls * 100).toFixed(1) : 0
-    const colors = { qwen: '#409eff', zhipu: '#67c23a', ernie: '#e6a23c', ollama: '#909399' }
+    const colors = { qwen: '#2563eb', zhipu: '#059669', ernie: '#d97706', ollama: '#64748b' }
     html += `
       <div class="pie-item">
         <div class="pie-dot" style="background: ${colors[name] || '#909399'}"></div>
@@ -249,7 +249,7 @@ onMounted(() => {
 
           .bar {
             width: 100%;
-            background: linear-gradient(to top, #409eff, #79bbff);
+            background: linear-gradient(to top, #2563eb, #60a5fa);
             border-radius: 2px 2px 0 0;
             min-height: 4px;
           }

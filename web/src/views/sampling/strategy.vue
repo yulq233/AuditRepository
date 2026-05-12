@@ -545,12 +545,12 @@ onMounted(async () => {
   .stat-value {
     font-size: 24px;
     font-weight: bold;
-    color: #409eff;
+    color: #2563eb;
   }
 
   .stat-label {
     font-size: 14px;
-    color: #909399;
+    color: #94a3b8;
     margin-top: 8px;
   }
 }
@@ -564,7 +564,7 @@ onMounted(async () => {
   .result-value {
     font-size: 36px;
     font-weight: bold;
-    color: #409eff;
+    color: #2563eb;
   }
 
   .result-label {

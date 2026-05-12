@@ -234,8 +234,8 @@ onMounted(() => {
   }
 
   &.in_progress {
-    background: #ecf5ff;
-    color: #409eff;
+    background: #dbeafe;
+    color: #2563eb;
   }
 
   &.completed {

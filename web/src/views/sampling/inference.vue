@@ -403,7 +403,7 @@ onMounted(() => {
     .interval-range {
       position: absolute;
       height: 100%;
-      background: linear-gradient(90deg, #409eff, #67c23a);
+      background: linear-gradient(90deg, #2563eb, #059669);
       border-radius: 10px;
       opacity: 0.6;
     }

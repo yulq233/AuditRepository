@@ -979,17 +979,17 @@ const renderRadarChart = () => {
             type: 'linear',
             x: 0, y: 0, x2: 1, y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(64, 158, 255, 0.5)' },
-              { offset: 1, color: 'rgba(64, 158, 255, 0.2)' }
+              { offset: 0, color: 'rgba(37, 99, 235, 0.5)' },
+              { offset: 1, color: 'rgba(37, 99, 235, 0.2)' }
             ]
           }
         },
         lineStyle: {
-          color: '#409eff',
+          color: '#2563eb',
           width: 2
         },
         itemStyle: {
-          color: '#409eff'
+          color: '#2563eb'
         }
       }]
     }]
@@ -1038,7 +1038,7 @@ const renderTrendChart = () => {
       symbol: 'circle',
       symbolSize: 6,
       lineStyle: {
-        color: '#409eff',
+        color: '#2563eb',
         width: 2
       },
       areaStyle: {
@@ -1046,12 +1046,12 @@ const renderTrendChart = () => {
           type: 'linear',
           x: 0, y: 0, x2: 0, y2: 1,
           colorStops: [
-            { offset: 0, color: 'rgba(64, 158, 255, 0.35)' },
-            { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
+            { offset: 0, color: 'rgba(37, 99, 235, 0.35)' },
+            { offset: 1, color: 'rgba(37, 99, 235, 0.05)' }
           ]
         }
       },
-      itemStyle: { color: '#409eff' }
+      itemStyle: { color: '#2563eb' }
     }]
   })
 }
@@ -1574,7 +1574,7 @@ onUnmounted(() => {
 
 .header-icon {
   font-size: 20px;
-  color: #409eff;
+  color: #2563eb;
   margin-right: 10px;
 }
 

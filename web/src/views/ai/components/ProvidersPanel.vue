@@ -137,7 +137,7 @@ onMounted(() => {
           font-size: 14px;
 
           &.url {
-            color: #409eff;
+            color: #2563eb;
             font-size: 12px;
           }
         }

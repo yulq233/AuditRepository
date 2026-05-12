@@ -45,7 +45,7 @@
       <el-row :gutter="20">
         <el-col :span="6">
           <div class="quick-action" @click="$router.push('/sampling/risk-profile')">
-            <el-icon :size="40" color="#409eff"><DataAnalysis /></el-icon>
+            <el-icon :size="40" color="#3b82f6"><DataAnalysis /></el-icon>
             <div>风险画像</div>
           </div>
         </el-col>

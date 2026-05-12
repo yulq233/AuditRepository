@@ -207,7 +207,7 @@ const handleRegister = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1a1f36 0%, #2d3561 50%, #1a1f36 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
   position: relative;
   overflow: hidden;
 }
@@ -223,7 +223,7 @@ const handleRegister = async () => {
 .bg-circle {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, transparent 70%);
   animation: float 8s ease-in-out infinite;
 }
 
@@ -241,7 +241,7 @@ const handleRegister = async () => {
   bottom: -100px;
   left: -100px;
   animation-delay: -2s;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.12) 0%, transparent 70%);
 }
 
 .bg-circle-3 {
@@ -251,7 +251,7 @@ const handleRegister = async () => {
   left: 50%;
   transform: translate(-50%, -50%);
   animation-delay: -4s;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, transparent 70%);
 }
 
 // 登录卡片
@@ -260,11 +260,11 @@ const handleRegister = async () => {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: 24px;
+  border-radius: 20px;
   padding: 48px 48px;
   box-shadow:
-    0 25px 50px -12px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+    0 25px 50px -12px rgba(15, 23, 42, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
   position: relative;
   z-index: 1;
 }
@@ -282,10 +282,10 @@ const handleRegister = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: $gradient-primary;
   border-radius: 16px;
   color: white;
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
 
   svg {
     width: 32px;
@@ -296,14 +296,14 @@ const handleRegister = async () => {
 .logo-title {
   font-size: 24px;
   font-weight: 700;
-  color: #1f2937;
+  color: $text-primary;
   margin-bottom: 8px;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 }
 
 .logo-subtitle {
   font-size: 14px;
-  color: #6b7280;
+  color: $text-secondary;
   font-weight: 400;
 }
 
@@ -319,18 +319,18 @@ const handleRegister = async () => {
 .tab-item {
   font-size: 20px;
   font-weight: 500;
-  color: #9ca3af;
+  color: $text-placeholder;
   cursor: pointer;
   padding: 8px 16px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   position: relative;
 
   &:hover {
-    color: #6366f1;
+    color: $primary-color;
   }
 
   &.active {
-    color: #1f2937;
+    color: $text-primary;
     font-weight: 600;
 
     &::after {
@@ -341,7 +341,7 @@ const handleRegister = async () => {
       transform: translateX(-50%);
       width: 24px;
       height: 3px;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      background: $gradient-primary;
       border-radius: 2px;
     }
   }
@@ -350,7 +350,7 @@ const handleRegister = async () => {
 .tab-divider {
   width: 1px;
   height: 20px;
-  background: #e5e7eb;
+  background: $border-color;
   margin: 0 8px;
 }
 
@@ -387,8 +387,8 @@ const handleRegister = async () => {
   :deep(.el-input__wrapper) {
     padding-left: 44px;
     padding-right: 16px;
-    border-radius: 12px;
-    background: #f9fafb;
+    border-radius: 10px;
+    background: #f8fafc;
     border: 1px solid transparent;
     box-shadow: none;
     transition: all 0.2s ease;
@@ -397,13 +397,13 @@ const handleRegister = async () => {
 
     &:hover {
       background: #fff;
-      border-color: #e5e7eb;
+      border-color: $border-color;
     }
 
     &.is-focus {
       background: #fff;
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
     }
   }
 
@@ -412,7 +412,7 @@ const handleRegister = async () => {
     width: 100%;
 
     &::placeholder {
-      color: #9ca3af;
+      color: $text-placeholder;
     }
   }
 }
@@ -421,14 +421,14 @@ const handleRegister = async () => {
   position: absolute;
   left: 14px;
   font-size: 18px;
-  color: #9ca3af;
+  color: $text-placeholder;
   z-index: 1;
   pointer-events: none;
   transition: color 0.2s ease;
 }
 
 .input-wrapper:focus-within .input-icon {
-  color: #6366f1;
+  color: $primary-color;
 }
 
 // 提交按钮
@@ -437,15 +437,14 @@ const handleRegister = async () => {
   height: 48px;
   font-size: 16px;
   font-weight: 600;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 10px;
+  background: $gradient-primary;
   border: none;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: all 0.2s ease;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
   }
 
   &:active {
@@ -460,7 +459,7 @@ const handleRegister = async () => {
 
   p {
     font-size: 12px;
-    color: #9ca3af;
+    color: $text-placeholder;
   }
 }
 

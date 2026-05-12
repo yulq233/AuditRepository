@@ -386,7 +386,7 @@ const getFileIcon = (type) => {
 const getFileIconColor = (type) => {
   if (['.jpg', '.jpeg', '.png', '.bmp'].includes(type)) return '#10b981'
   if (type === '.pdf') return '#ef4444'
-  return '#6366f1'
+  return '#2563eb'
 }
 
 const previewAttachment = (att) => {
@@ -558,8 +558,8 @@ onMounted(() => {
     justify-content: center;
 
     &.total {
-      background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-      color: #6366f1;
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      color: #2563eb;
     }
 
     &.high {

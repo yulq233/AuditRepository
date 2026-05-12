@@ -247,7 +247,7 @@
               <el-card shadow="never">
                 <template #header>
                   <div style="display: flex; align-items: center">
-                    <el-icon color="#409eff" style="margin-right: 5px"><MagicStick /></el-icon>
+                    <el-icon color="#3b82f6" style="margin-right: 5px"><MagicStick /></el-icon>
                     <span>AI智能抽样配置</span>
                   </div>
                 </template>

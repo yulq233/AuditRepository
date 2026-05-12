@@ -169,7 +169,7 @@ const stats = ref({
 })
 
 const statCards = [
-  { key: 'projectCount', label: '项目总数', icon: Folder, gradient: 'linear-gradient(135deg, #6366f1, #818cf8)' },
+  { key: 'projectCount', label: '项目总数', icon: Folder, gradient: 'linear-gradient(135deg, #2563eb, #3b82f6)' },
   { key: 'voucherCount', label: '凭证总数', icon: Document, gradient: 'linear-gradient(135deg, #10b981, #34d399)' },
   { key: 'sampleCount', label: '抽样数量', icon: DataAnalysis, gradient: 'linear-gradient(135deg, #f59e0b, #fbbf24)' },
   { key: 'alertCount', label: '合规预警', icon: Warning, gradient: 'linear-gradient(135deg, #ef4444, #f87171)' }
