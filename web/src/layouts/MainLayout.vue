@@ -8,9 +8,9 @@
       </div>
       <el-menu
         :default-active="activeMenu"
-        background-color="#0f172a"
-        text-color="rgba(255,255,255,0.6)"
-        active-text-color="#3b82f6"
+        background-color="#ffffff"
+        text-color="#64748b"
+        active-text-color="#2563eb"
         router
       >
         <el-menu-item index="/dashboard">
@@ -158,23 +158,23 @@ const handleCommand = (command) => {
   background: linear-gradient(180deg, $sidebar-bg 0%, $sidebar-bg-end 100%);
   height: 100%;
   overflow-y: auto;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid $border-light;
 
   .logo {
     height: $header-height;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
+    color: $text-primary;
     font-size: 16px;
     font-weight: 700;
-    background: rgba(0, 0, 0, 0.15);
+    background: $background-white;
     letter-spacing: 0.5px;
 
     .logo-icon {
       margin-right: 10px;
       font-size: 22px;
-      color: $primary-light;
+      color: $primary-color;
     }
   }
 
