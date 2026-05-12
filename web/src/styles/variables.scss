@@ -1,83 +1,100 @@
 // =============================================
-// AI审计抽凭系统 - Figma 简约现代风格设计令牌
+// AI审计抽凭系统 - 深蓝翡翠 专业金融审计风格
 // =============================================
 
 // ---------------------------------------------
-// 颜色系统 - Figma 风格柔和配色
+// 颜色系统 - 深蓝翡翠
 // ---------------------------------------------
 
-// 主色渐变基色
-$primary-color: #6366f1;  // 更柔和的紫蓝色
-$primary-light: #818cf8;
-$primary-lighter: #e0e7ff;
-$primary-dark: #4f46e5;
+// 主色 - 专业深蓝
+$primary-color: #2563eb;
+$primary-light: #3b82f6;
+$primary-lighter: #dbeafe;
+$primary-dark: #1d4ed8;
+
+// 辅助色 - 翡翠绿
+$accent-color: #0d9488;
+$accent-light: #14b8a6;
+$accent-lighter: #ccfbf1;
+$accent-dark: #0f766e;
 
 // 渐变色
-$gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-$gradient-primary-hover: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-$gradient-success: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-$gradient-warning: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-$gradient-danger: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
-$gradient-info: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+$gradient-primary: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+$gradient-primary-hover: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+$gradient-success: linear-gradient(135deg, #059669 0%, #10b981 100%);
+$gradient-warning: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+$gradient-danger: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+$gradient-info: linear-gradient(135deg, #475569 0%, #64748b 100%);
 
-// 功能色 - 更柔和
-$success-color: #10b981;
-$success-light: #34d399;
+// 功能色
+$success-color: #059669;
+$success-light: #10b981;
 $success-lighter: #d1fae5;
 
-$warning-color: #f59e0b;
-$warning-light: #fbbf24;
+$warning-color: #d97706;
+$warning-light: #f59e0b;
 $warning-lighter: #fef3c7;
 
-$danger-color: #ef4444;
-$danger-light: #f87171;
+$danger-color: #dc2626;
+$danger-light: #ef4444;
 $danger-lighter: #fee2e2;
 
-$info-color: #6b7280;
-$info-light: #9ca3af;
-$info-lighter: #f3f4f6;
+$info-color: #475569;
+$info-light: #64748b;
+$info-lighter: #f1f5f9;
 
-// 中性色 - 更柔和
-$text-primary: #1f2937;
-$text-regular: #4b5563;
-$text-secondary: #6b7280;
-$text-placeholder: #9ca3af;
-$text-disabled: #d1d5db;
+// 中性色 - 冷灰调
+$text-primary: #0f172a;
+$text-regular: #334155;
+$text-secondary: #64748b;
+$text-placeholder: #94a3b8;
+$text-disabled: #cbd5e1;
 
-$border-color: #e5e7eb;
-$border-light: #f3f4f6;
-$border-lighter: #f9fafb;
+$border-color: #e2e8f0;
+$border-light: #f1f5f9;
+$border-lighter: #f8fafc;
 
-// 背景色 - Figma 风格浅灰
-$background-color: #f8fafc;
+// 背景色
+$background-color: #f1f5f9;
 $background-white: #ffffff;
-$background-dark: #1e293b;
-$background-hover: #f1f5f9;
+$background-dark: #0f172a;
+$background-hover: #e2e8f0;
+
+// 侧边栏色
+$sidebar-bg: #0f172a;
+$sidebar-bg-end: #1e293b;
+$sidebar-text: rgba(255, 255, 255, 0.6);
+$sidebar-text-hover: rgba(255, 255, 255, 0.9);
+$sidebar-text-active: #ffffff;
+$sidebar-active-bg: rgba(37, 99, 235, 0.2);
+$sidebar-active-border: #3b82f6;
+$sidebar-hover-bg: rgba(255, 255, 255, 0.05);
 
 // ---------------------------------------------
-// 间距系统 - 更宽松
+// 间距系统
 // ---------------------------------------------
 $spacing-xs: 4px;
 $spacing-sm: 8px;
-$spacing-md: 16px;
-$spacing-lg: 24px;
-$spacing-xl: 32px;
-$spacing-xxl: 48px;
-$spacing-3xl: 64px;
+$spacing-md: 12px;
+$spacing-lg: 16px;
+$spacing-xl: 24px;
+$spacing-xxl: 32px;
+$spacing-3xl: 48px;
 
 // ---------------------------------------------
 // 字体系统
 // ---------------------------------------------
-$font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+$font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+$font-family-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
 
 $font-size-xs: 12px;
 $font-size-sm: 13px;
 $font-size-md: 14px;
-$font-size-lg: 16px;
+$font-size-lg: 15px;
 $font-size-xl: 18px;
 $font-size-xxl: 20px;
 $font-size-display: 24px;
-$font-size-hero: 32px;
+$font-size-hero: 28px;
 
 $font-weight-normal: 400;
 $font-weight-medium: 500;
@@ -89,49 +106,50 @@ $line-height-normal: 1.5;
 $line-height-relaxed: 1.75;
 
 // ---------------------------------------------
-// 圆角系统 - Figma 大圆角风格
+// 圆角系统 - 适度圆角
 // ---------------------------------------------
 $border-radius-sm: 4px;
-$border-radius-md: 8px;
-$border-radius-lg: 12px;
-$border-radius-xl: 16px;
-$border-radius-xxl: 24px;
+$border-radius-md: 6px;
+$border-radius-lg: 8px;
+$border-radius-xl: 12px;
+$border-radius-xxl: 16px;
 $border-radius-full: 9999px;
 
 // ---------------------------------------------
-// 阴影系统 - Figma 柔和阴影
+// 阴影系统 - 克制柔和
 // ---------------------------------------------
-$shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
-$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
-$shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+$shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+$shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+$shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
+$shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+$shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 10px 10px -5px rgba(15, 23, 42, 0.02);
+$shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.15);
 
 // 卡片阴影
-$shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
-$shadow-card-hover: 0 10px 20px rgba(0, 0, 0, 0.08), 0 3px 6px rgba(0, 0, 0, 0.04);
-$shadow-button: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+$shadow-card-hover: 0 8px 16px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.03);
+$shadow-button: 0 1px 2px rgba(15, 23, 42, 0.05);
 
 // 特殊效果
-$shadow-glow-primary: 0 0 20px rgba(99, 102, 241, 0.3);
-$shadow-glow-success: 0 0 20px rgba(16, 185, 129, 0.3);
-$shadow-glow-danger: 0 0 20px rgba(239, 68, 68, 0.3);
+$shadow-glow-primary: 0 0 16px rgba(37, 99, 235, 0.25);
+$shadow-glow-success: 0 0 16px rgba(5, 150, 105, 0.25);
+$shadow-glow-danger: 0 0 16px rgba(220, 38, 38, 0.25);
 
 // 玻璃态效果
-$glass-background: rgba(255, 255, 255, 0.7);
-$glass-border: rgba(255, 255, 255, 0.2);
-$glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+$glass-background: rgba(255, 255, 255, 0.75);
+$glass-border: rgba(255, 255, 255, 0.15);
+$glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.1);
 
 // 渐变背景
-$gradient-bg-purple: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-$gradient-bg-blue: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-$gradient-bg-green: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-$gradient-bg-orange: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-$gradient-bg-dark: linear-gradient(135deg, #1a1f36 0%, #2d3561 100%);
+$gradient-bg-navy: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+$gradient-bg-blue: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+$gradient-bg-teal: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+$gradient-bg-emerald: linear-gradient(135deg, #059669 0%, #10b981 100%);
+$gradient-bg-amber: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+$gradient-bg-rose: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
 
 // ---------------------------------------------
-// 过渡动画 - 更平滑
+// 过渡动画
 // ---------------------------------------------
 $transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 $transition-normal: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -141,9 +159,9 @@ $transition-bounce: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 // ---------------------------------------------
 // 布局
 // ---------------------------------------------
-$sidebar-width: 240px;
-$sidebar-collapsed-width: 72px;
-$header-height: 64px;
+$sidebar-width: 230px;
+$sidebar-collapsed-width: 68px;
+$header-height: 56px;
 $footer-height: 48px;
 
 // 内容区域最大宽度
