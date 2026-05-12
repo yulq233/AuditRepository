@@ -1,5 +1,5 @@
 // =============================================
-// 布局样式 - Figma 简约现代风格
+// 布局样式 - 深蓝翡翠 专业金融审计风格
 // =============================================
 
 .layout-container {
@@ -8,25 +8,15 @@
   background: $background-color;
 }
 
-// 侧边栏 - Figma 风格
+// 侧边栏
 .sidebar {
   width: $sidebar-width;
-  background: linear-gradient(180deg, #1a1f36 0%, #151933 100%);
+  background: linear-gradient(180deg, $sidebar-bg 0%, $sidebar-bg-end 100%);
   height: 100%;
   overflow-y: auto;
-  box-shadow: $shadow-xl;
   position: relative;
   z-index: 10;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 1px;
-    height: 100%;
-    background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
-  }
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 
   .logo {
     height: $header-height;
@@ -34,77 +24,94 @@
     align-items: center;
     justify-content: center;
     color: #fff;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(0, 0, 0, 0.15);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    letter-spacing: -0.5px;
+    letter-spacing: 0.5px;
 
     .logo-icon {
-      margin-right: 12px;
-      font-size: 24px;
+      margin-right: 10px;
+      font-size: 22px;
+      color: $primary-light;
     }
   }
 
   .el-menu {
     border-right: none;
     background: transparent;
-    padding: 8px;
+    padding: 6px;
   }
 
   .el-menu-item,
   .el-sub-menu__title {
-    color: rgba(255, 255, 255, 0.65);
-    border-radius: $border-radius-lg;
-    margin: 2px 0;
-    transition: all $transition-normal;
+    color: $sidebar-text;
+    border-radius: $border-radius-md;
+    margin: 1px 0;
+    height: 42px;
+    line-height: 42px;
+    transition: all $transition-fast;
+
+    .el-icon {
+      font-size: 18px;
+      margin-right: 10px;
+    }
 
     &:hover {
-      background: rgba(99, 102, 241, 0.15);
-      color: rgba(255, 255, 255, 0.9);
+      background: $sidebar-hover-bg;
+      color: $sidebar-text-hover;
     }
   }
 
   .el-menu-item.is-active {
-    color: white;
-    background: $gradient-primary;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    color: $sidebar-text-active;
+    background: $sidebar-active-bg;
+    border-left: 3px solid $sidebar-active-border;
+    border-radius: 0 $border-radius-md $border-radius-md 0;
+    margin-left: 0;
+    padding-left: 17px;
 
-    &::before {
-      display: none;
+    .el-icon {
+      color: $primary-light;
     }
   }
 
-  // 子菜单样式 - 协调的背景色
+  // 子菜单样式
   .el-sub-menu {
     .el-menu {
-      background: rgba(0, 0, 0, 0.25);
-      border-radius: $border-radius-lg;
-      margin: 4px 8px;
-      padding: 4px 0;
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: $border-radius-md;
+      margin: 2px 6px;
+      padding: 2px 0;
     }
 
     .el-menu-item {
       padding-left: 48px !important;
       font-size: 13px;
-      color: rgba(255, 255, 255, 0.55);
-      margin: 1px 4px;
+      color: $sidebar-text;
+      height: 38px;
+      line-height: 38px;
+      margin: 0 4px;
+      border-left: none;
 
       &:hover {
-        background: rgba(99, 102, 241, 0.2);
-        color: rgba(255, 255, 255, 0.85);
+        background: $sidebar-hover-bg;
+        color: $sidebar-text-hover;
       }
 
       &.is-active {
-        background: rgba(99, 102, 241, 0.35);
-        color: white;
+        background: $sidebar-active-bg;
+        color: $sidebar-text-active;
+        border-left: 3px solid $sidebar-active-border;
+        border-radius: 0 $border-radius-md $border-radius-md 0;
+        padding-left: 45px;
       }
     }
   }
 
   // 子菜单标题箭头颜色
   .el-sub-menu__icon-arrow {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.4);
   }
 }
 
@@ -117,16 +124,15 @@
   background: $background-color;
 }
 
-// 顶部导航 - Figma 风格
+// 顶部导航
 .header {
   height: $header-height;
   background: white;
-  border-bottom: 1px solid $border-lighter;
+  border-bottom: 1px solid $border-color;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
-  box-shadow: $shadow-sm;
+  padding: 0 24px;
   position: relative;
   z-index: 5;
 
@@ -139,7 +145,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 14px;
+      font-size: 13px;
       color: $text-secondary;
 
       .separator {
@@ -156,15 +162,15 @@
   .header-right {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
 
     .header-action {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: $border-radius-lg;
+      border-radius: $border-radius-md;
       color: $text-secondary;
       cursor: pointer;
       transition: all $transition-fast;
@@ -178,10 +184,10 @@
     .user-info {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       cursor: pointer;
-      padding: 6px 12px;
-      border-radius: $border-radius-lg;
+      padding: 5px 10px;
+      border-radius: $border-radius-md;
       transition: all $transition-fast;
 
       &:hover {
@@ -191,16 +197,17 @@
       .el-avatar {
         background: $gradient-primary;
         font-weight: 600;
+        font-size: 13px;
       }
 
       .username {
         font-weight: 500;
         color: $text-primary;
-        font-size: 14px;
+        font-size: 13px;
       }
 
       .role {
-        font-size: 12px;
+        font-size: 11px;
         color: $text-secondary;
       }
     }
