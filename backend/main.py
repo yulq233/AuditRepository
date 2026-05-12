@@ -191,6 +191,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=9000,
+        port=9002,
         reload=False,  # 禁用reload以避免DuckDB多进程冲突
     )
