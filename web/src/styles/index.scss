@@ -13,7 +13,7 @@
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -24,7 +24,7 @@
 @keyframes fadeInDown {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-12px);
   }
   to {
     opacity: 1;
@@ -35,7 +35,7 @@
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
   to {
     opacity: 1;
@@ -46,7 +46,7 @@
 @keyframes slideInRight {
   from {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateX(16px);
   }
   to {
     opacity: 1;
@@ -66,7 +66,7 @@
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-6px); }
 }
 
 @keyframes gradient {
@@ -76,11 +76,11 @@
 }
 
 // 动画类
-.animate-fadeIn { animation: fadeIn 0.3s ease-out; }
-.animate-fadeInUp { animation: fadeInUp 0.4s ease-out; }
-.animate-fadeInDown { animation: fadeInDown 0.4s ease-out; }
-.animate-scaleIn { animation: scaleIn 0.3s ease-out; }
-.animate-slideInRight { animation: slideInRight 0.3s ease-out; }
+.animate-fadeIn { animation: fadeIn 0.25s ease-out; }
+.animate-fadeInUp { animation: fadeInUp 0.3s ease-out; }
+.animate-fadeInDown { animation: fadeInDown 0.3s ease-out; }
+.animate-scaleIn { animation: scaleIn 0.25s ease-out; }
+.animate-slideInRight { animation: slideInRight 0.25s ease-out; }
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-pulse { animation: pulse 2s ease-in-out infinite; }
 
@@ -106,12 +106,12 @@ html, body {
 }
 
 // =============================================
-// 滚动条样式 - Figma 风格
+// 滚动条样式
 // =============================================
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -132,65 +132,59 @@ html, body {
 }
 
 // =============================================
-// Element Plus 组件样式覆盖 - Figma 风格
+// Element Plus 组件样式覆盖 - 深蓝翡翠风格
 // =============================================
 
 // 按钮样式
 .el-button {
   font-weight: $font-weight-medium;
-  border-radius: $border-radius-lg;
-  transition: all $transition-normal;
+  border-radius: $border-radius-md;
+  transition: all $transition-fast;
   border: none;
+  font-size: $font-size-md;
 
   &--primary {
-    background: $gradient-primary;
+    background: $primary-color;
     box-shadow: $shadow-button;
     color: white;
 
     &:hover, &:focus {
-      background: $gradient-primary-hover;
-      box-shadow: $shadow-md;
-      transform: translateY(-1px);
+      background: $primary-light;
+      box-shadow: $shadow-sm;
     }
 
     &:active {
-      transform: translateY(0);
+      background: $primary-dark;
     }
   }
 
   &--success {
-    background: $gradient-success;
+    background: $success-color;
     box-shadow: $shadow-button;
     color: white;
 
     &:hover, &:focus {
-      opacity: 0.9;
-      box-shadow: $shadow-md;
-      transform: translateY(-1px);
+      background: $success-light;
     }
   }
 
   &--warning {
-    background: $gradient-warning;
+    background: $warning-color;
     box-shadow: $shadow-button;
     color: white;
 
     &:hover, &:focus {
-      opacity: 0.9;
-      box-shadow: $shadow-md;
-      transform: translateY(-1px);
+      background: $warning-light;
     }
   }
 
   &--danger {
-    background: $gradient-danger;
+    background: $danger-color;
     box-shadow: $shadow-button;
     color: white;
 
     &:hover, &:focus {
-      opacity: 0.9;
-      box-shadow: $shadow-md;
-      transform: translateY(-1px);
+      background: $danger-light;
     }
   }
 
@@ -207,23 +201,21 @@ html, body {
     }
   }
 
-  // 圆形按钮
   &.is-circle {
     border-radius: $border-radius-full;
   }
 
-  // 小尺寸按钮
   &--small {
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-sm;
   }
 }
 
 // 卡片样式
 .el-card {
-  border-radius: $border-radius-xl;
-  border: none;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-light;
   box-shadow: $shadow-card;
-  transition: all $transition-normal;
+  transition: all $transition-fast;
 
   &:hover {
     box-shadow: $shadow-card-hover;
@@ -231,7 +223,7 @@ html, body {
 
   .el-card__header {
     padding: $spacing-lg $spacing-xl;
-    border-bottom: 1px solid $border-lighter;
+    border-bottom: 1px solid $border-light;
     font-weight: $font-weight-semibold;
     color: $text-primary;
   }
@@ -241,17 +233,17 @@ html, body {
   }
 }
 
-// 表格样式 - Pixso 简约风格
+// 表格样式
 .el-table {
   border-radius: $border-radius-lg;
 
   th.el-table__cell {
-    background: #f9fafb !important;
-    color: #374151;
+    background: #f8fafc !important;
+    color: $text-primary;
     font-weight: 600;
-    font-size: 13px;
-    padding: 18px 16px;
-    border-bottom: 1px solid #f3f4f6;
+    font-size: $font-size-sm;
+    padding: 14px 16px;
+    border-bottom: 1px solid $border-light;
 
     .cell {
       white-space: nowrap;
@@ -261,9 +253,10 @@ html, body {
   }
 
   td.el-table__cell {
-    padding: 22px 16px;
-    border-bottom: 1px solid #f3f4f6;
-    transition: background 0.15s;
+    padding: 16px;
+    border-bottom: 1px solid $border-light;
+    transition: background 0.1s;
+    font-size: $font-size-md;
 
     .cell {
       white-space: nowrap;
@@ -273,10 +266,10 @@ html, body {
   }
 
   tr {
-    transition: all 0.15s;
+    transition: background 0.1s;
 
     &:hover td.el-table__cell {
-      background: #f9fafb !important;
+      background: #f8fafc !important;
     }
   }
 
@@ -284,7 +277,6 @@ html, body {
     display: none;
   }
 
-  // 固定列样式
   .el-table-fixed-column--left,
   .el-table-fixed-column--right {
     background: white !important;
@@ -293,13 +285,13 @@ html, body {
   .el-table__fixed,
   .el-table__fixed-right {
     z-index: 3 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
   }
 
   tr:hover {
     .el-table-fixed-column--left,
     .el-table-fixed-column--right {
-      background: #f9fafb !important;
+      background: #f8fafc !important;
     }
   }
 }
@@ -307,11 +299,11 @@ html, body {
 // 输入框样式
 .el-input {
   .el-input__wrapper {
-    border-radius: $border-radius-lg;
+    border-radius: $border-radius-md;
     border: 1px solid $border-color;
     box-shadow: none;
     transition: all $transition-fast;
-    padding: 4px 12px;
+    padding: 4px 11px;
 
     &:hover {
       border-color: $text-placeholder;
@@ -319,14 +311,14 @@ html, body {
 
     &.is-focus, &:focus {
       border-color: $primary-color;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
     }
   }
 }
 
 .el-select {
   .el-select__wrapper {
-    border-radius: $border-radius-lg;
+    border-radius: $border-radius-md;
     border: 1px solid $border-color;
     box-shadow: none;
     transition: all $transition-fast;
@@ -337,25 +329,26 @@ html, body {
 
     &.is-focused {
       border-color: $primary-color;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
     }
   }
 }
 
 .el-input-number {
   .el-input__wrapper {
-    border-radius: $border-radius-lg;
+    border-radius: $border-radius-md;
   }
 }
 
 // 标签样式
 .el-tag {
-  border-radius: $border-radius-md;
+  border-radius: $border-radius-sm;
   font-weight: $font-weight-medium;
   border: none;
-  padding: 0 10px;
-  height: 24px;
-  line-height: 24px;
+  padding: 0 8px;
+  height: 22px;
+  line-height: 22px;
+  font-size: $font-size-xs;
 
   &.el-tag--primary {
     background: $primary-lighter;
@@ -388,11 +381,12 @@ html, body {
   gap: $spacing-xs;
 
   .el-pager li {
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-sm;
     font-weight: $font-weight-medium;
-    min-width: 32px;
-    height: 32px;
-    line-height: 32px;
+    min-width: 30px;
+    height: 30px;
+    line-height: 30px;
+    font-size: $font-size-sm;
     transition: all $transition-fast;
 
     &:hover {
@@ -400,15 +394,15 @@ html, body {
     }
 
     &.is-active {
-      background: $gradient-primary;
+      background: $primary-color;
       color: white;
     }
   }
 
   .btn-prev, .btn-next {
-    border-radius: $border-radius-md;
-    width: 32px;
-    height: 32px;
+    border-radius: $border-radius-sm;
+    width: 30px;
+    height: 30px;
     transition: all $transition-fast;
 
     &:hover {
@@ -419,13 +413,13 @@ html, body {
 
 // 对话框样式
 .el-dialog {
-  border-radius: $border-radius-xxl;
+  border-radius: $border-radius-xl;
   overflow: hidden;
   box-shadow: $shadow-2xl;
 
   .el-dialog__header {
     padding: $spacing-lg $spacing-xl;
-    border-bottom: 1px solid $border-lighter;
+    border-bottom: 1px solid $border-light;
     margin-right: 0;
 
     .el-dialog__title {
@@ -441,25 +435,26 @@ html, body {
 
   .el-dialog__footer {
     padding: $spacing-lg $spacing-xl;
-    border-top: 1px solid $border-lighter;
+    border-top: 1px solid $border-light;
     background: $background-color;
   }
 }
 
 // 下拉菜单
 .el-dropdown-menu {
-  border-radius: $border-radius-lg;
-  border: none;
+  border-radius: $border-radius-md;
+  border: 1px solid $border-light;
   box-shadow: $shadow-lg;
   padding: $spacing-xs;
 
   .el-dropdown-menu__item {
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-sm;
     padding: $spacing-sm $spacing-md;
     transition: all $transition-fast;
+    font-size: $font-size-md;
 
     &:hover {
-      background: $background-hover;
+      background: $primary-lighter;
       color: $primary-color;
     }
   }
@@ -467,29 +462,29 @@ html, body {
 
 // 消息提示
 .el-message {
-  border-radius: $border-radius-lg;
+  border-radius: $border-radius-md;
   border: none;
   box-shadow: $shadow-lg;
   padding: $spacing-md $spacing-lg;
 
   &.el-message--success {
     background: white;
-    border-left: 4px solid $success-color;
+    border-left: 3px solid $success-color;
   }
 
   &.el-message--warning {
     background: white;
-    border-left: 4px solid $warning-color;
+    border-left: 3px solid $warning-color;
   }
 
   &.el-message--error {
     background: white;
-    border-left: 4px solid $danger-color;
+    border-left: 3px solid $danger-color;
   }
 
   &.el-message--info {
     background: white;
-    border-left: 4px solid $info-color;
+    border-left: 3px solid $info-color;
   }
 }
 
@@ -501,9 +496,9 @@ html, body {
 
 // 上传组件
 .el-upload-dragger {
-  border-radius: $border-radius-xl;
+  border-radius: $border-radius-lg;
   border: 2px dashed $border-color;
-  transition: all $transition-normal;
+  transition: all $transition-fast;
   background: $background-color;
 
   &:hover {
@@ -516,6 +511,7 @@ html, body {
 .el-form-item__label {
   font-weight: $font-weight-medium;
   color: $text-secondary;
+  font-size: $font-size-md;
 }
 
 // 空状态
@@ -552,7 +548,7 @@ html, body {
 
 // 警告框
 .el-alert {
-  border-radius: $border-radius-lg;
+  border-radius: $border-radius-md;
   border: none;
 
   &.el-alert--info {
@@ -574,8 +570,8 @@ html, body {
 
 // 折叠面板
 .el-collapse {
-  border-radius: $border-radius-lg;
-  border: 1px solid $border-lighter;
+  border-radius: $border-radius-md;
+  border: 1px solid $border-light;
   overflow: hidden;
 
   .el-collapse-item__header {
@@ -617,7 +613,7 @@ html, body {
     font-size: $font-size-hero;
     font-weight: $font-weight-bold;
     color: $text-primary;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
   }
 
   .page-subtitle {
@@ -628,17 +624,17 @@ html, body {
 }
 
 // =============================================
-// 卡片组件 - Figma 风格
+// 卡片组件
 // =============================================
 
 .card-container {
   background: $background-white;
-  border-radius: $border-radius-xl;
+  border-radius: $border-radius-lg;
   padding: $spacing-xl;
   margin-bottom: $spacing-lg;
   box-shadow: $shadow-card;
-  transition: all $transition-normal;
-  border: 1px solid $border-lighter;
+  transition: all $transition-fast;
+  border: 1px solid $border-light;
   overflow: hidden;
 
   &:hover {
@@ -667,13 +663,13 @@ html, body {
 }
 
 // =============================================
-// 表格容器 - 支持横向滚动
+// 表格容器
 // =============================================
 
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
-  border-radius: $border-radius-lg;
+  border-radius: $border-radius-md;
 
   &::-webkit-scrollbar {
     height: 6px;
@@ -686,15 +682,15 @@ html, body {
 }
 
 // =============================================
-// 筛选区域 - Figma 风格
+// 筛选区域
 // =============================================
 
 .filter-container {
   margin-bottom: $spacing-lg;
   padding: $spacing-lg;
   background: $background-white;
-  border-radius: $border-radius-xl;
-  border: 1px solid $border-lighter;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-light;
 
   .el-form-item {
     margin-bottom: 0;
@@ -703,7 +699,7 @@ html, body {
 }
 
 // =============================================
-// 分页 - Figma 风格
+// 分页
 // =============================================
 
 .pagination-container {
@@ -721,14 +717,14 @@ html, body {
 }
 
 // =============================================
-// 状态标签 - Figma 风格
+// 状态标签
 // =============================================
 
 .status-tag {
   display: inline-flex;
   align-items: center;
-  padding: $spacing-xs $spacing-md;
-  border-radius: $border-radius-full;
+  padding: 2px $spacing-sm;
+  border-radius: $border-radius-sm;
   font-size: $font-size-xs;
   font-weight: $font-weight-semibold;
 
@@ -759,14 +755,14 @@ html, body {
 }
 
 // =============================================
-// 风险标签 - Figma 风格
+// 风险标签
 // =============================================
 
 .risk-tag {
   display: inline-flex;
   align-items: center;
-  padding: $spacing-xs $spacing-md;
-  border-radius: $border-radius-full;
+  padding: 2px $spacing-sm;
+  border-radius: $border-radius-sm;
   font-size: $font-size-xs;
   font-weight: $font-weight-semibold;
 
@@ -813,20 +809,20 @@ html, body {
 }
 
 // =============================================
-// 统计卡片 - Figma 风格
+// 统计卡片
 // =============================================
 
 .stat-card {
   background: white;
-  border-radius: $border-radius-xl;
+  border-radius: $border-radius-lg;
   padding: $spacing-xl;
   box-shadow: $shadow-card;
-  transition: all $transition-normal;
-  border: 1px solid $border-lighter;
+  transition: all $transition-fast;
+  border: 1px solid $border-light;
 
   &:hover {
     box-shadow: $shadow-card-hover;
-    transform: translateY(-2px);
+    border-color: $border-color;
   }
 
   .stat-content {
@@ -835,9 +831,9 @@ html, body {
   }
 
   .stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: $border-radius-xl;
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius-lg;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -848,23 +844,23 @@ html, body {
 
   .stat-info {
     .stat-value {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: $font-weight-bold;
       color: $text-primary;
       line-height: 1;
-      letter-spacing: -1px;
+      letter-spacing: -0.5px;
     }
 
     .stat-label {
       font-size: $font-size-sm;
       color: $text-secondary;
-      margin-top: $spacing-xs;
+      margin-top: 4px;
     }
   }
 }
 
 // =============================================
-// 空状态 - Figma 风格
+// 空状态
 // =============================================
 
 .empty-state {
@@ -876,10 +872,10 @@ html, body {
   color: $text-secondary;
 
   .empty-icon {
-    font-size: 80px;
+    font-size: 64px;
     color: $text-placeholder;
     margin-bottom: $spacing-lg;
-    opacity: 0.5;
+    opacity: 0.4;
   }
 
   .empty-text {
@@ -895,17 +891,17 @@ html, body {
 
 .figma-table {
   background: white;
-  border-radius: $border-radius-xl;
+  border-radius: $border-radius-lg;
   overflow: hidden;
   box-shadow: $shadow-card;
-  border: 1px solid $border-lighter;
+  border: 1px solid $border-light;
 
   .table-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: $spacing-lg $spacing-xl;
-    border-bottom: 1px solid $border-lighter;
+    border-bottom: 1px solid $border-light;
     background: $background-color;
 
     .table-title {
@@ -988,7 +984,7 @@ html, body {
 }
 
 // =============================================
-// 高级视觉效果 - 玻璃态 & 渐变
+// 高级视觉效果
 // =============================================
 
 // 玻璃态卡片
@@ -997,30 +993,30 @@ html, body {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid $glass-border;
-  border-radius: $border-radius-xl;
+  border-radius: $border-radius-lg;
   box-shadow: $glass-shadow;
 }
 
 // 渐变背景容器
 .gradient-bg {
-  background: $gradient-bg-purple;
+  background: $gradient-bg-navy;
   background-size: 200% 200%;
   animation: gradient 15s ease infinite;
 }
 
 // 悬浮效果卡片
 .hover-lift {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
   }
 }
 
 // 闪烁加载效果
 .shimmer-loading {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -1035,7 +1031,7 @@ html, body {
     inset: 0;
     border-radius: inherit;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.25s ease;
     box-shadow: $shadow-glow-primary;
     pointer-events: none;
   }
@@ -1050,8 +1046,8 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: $border-radius-lg;
-  transition: all $transition-normal;
+  border-radius: $border-radius-md;
+  transition: all $transition-fast;
 
   &--sm {
     width: 32px;
@@ -1059,32 +1055,32 @@ html, body {
   }
 
   &--md {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
   }
 
   &--lg {
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
   }
 
   &--primary {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+    background: rgba(37, 99, 235, 0.1);
     color: $primary-color;
   }
 
   &--success {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(52, 211, 153, 0.1));
+    background: rgba(5, 150, 105, 0.1);
     color: $success-color;
   }
 
   &--warning {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.1));
+    background: rgba(217, 119, 6, 0.1);
     color: $warning-color;
   }
 
   &--danger {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(248, 113, 113, 0.1));
+    background: rgba(220, 38, 38, 0.1);
     color: $danger-color;
   }
 }
@@ -1100,9 +1096,9 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: $border-radius-full;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.3px;
 
@@ -1117,22 +1113,22 @@ html, body {
 
 // 页面入场动画
 .page-enter {
-  animation: fadeInUp 0.4s ease-out;
+  animation: fadeInUp 0.3s ease-out;
 }
 
 // 卡片入场动画
 .card-enter {
-  animation: scaleIn 0.3s ease-out;
+  animation: scaleIn 0.25s ease-out;
 }
 
 // 列表项交错动画
 .stagger-item {
   opacity: 0;
-  animation: fadeInUp 0.4s ease-out forwards;
+  animation: fadeInUp 0.3s ease-out forwards;
 
   @for $i from 1 through 10 {
     &:nth-child(#{$i}) {
-      animation-delay: #{$i * 0.05}s;
+      animation-delay: #{$i * 0.04}s;
     }
   }
 }

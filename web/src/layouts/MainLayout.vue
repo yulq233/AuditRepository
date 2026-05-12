@@ -8,9 +8,9 @@
       </div>
       <el-menu
         :default-active="activeMenu"
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409eff"
+        background-color="#0f172a"
+        text-color="rgba(255,255,255,0.6)"
+        active-text-color="#3b82f6"
         router
       >
         <el-menu-item index="/dashboard">
@@ -154,30 +154,56 @@ const handleCommand = (command) => {
 }
 
 .sidebar {
-  width: 220px;
-  background: #304156;
+  width: $sidebar-width;
+  background: linear-gradient(180deg, $sidebar-bg 0%, $sidebar-bg-end 100%);
   height: 100%;
   overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 
   .logo {
-    height: 60px;
+    height: $header-height;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     font-size: 16px;
-    font-weight: bold;
-    background: #263445;
+    font-weight: 700;
+    background: rgba(0, 0, 0, 0.15);
+    letter-spacing: 0.5px;
 
     .logo-icon {
       margin-right: 10px;
-      font-size: 20px;
+      font-size: 22px;
+      color: $primary-light;
     }
   }
 
   :deep(.el-menu) {
     border-right: none;
     background: transparent;
+    padding: 6px;
+  }
+
+  :deep(.el-menu-item),
+  :deep(.el-sub-menu__title) {
+    color: $sidebar-text;
+    border-radius: $border-radius-md;
+    margin: 1px 0;
+    height: 42px;
+    line-height: 42px;
+
+    &:hover {
+      background: $sidebar-hover-bg;
+      color: $sidebar-text-hover;
+    }
+  }
+
+  :deep(.el-menu-item.is-active) {
+    color: $sidebar-text-active;
+    background: $sidebar-active-bg;
+    border-left: 3px solid $sidebar-active-border;
+    border-radius: 0 $border-radius-md $border-radius-md 0;
+    padding-left: 17px;
   }
 }
 
@@ -189,22 +215,31 @@ const handleCommand = (command) => {
 }
 
 .header {
-  height: 60px;
+  height: $header-height;
   background: #fff;
-  border-bottom: 1px solid #dcdfe6;
+  border-bottom: 1px solid $border-color;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 24px;
 
   .user-info {
     display: flex;
     align-items: center;
     cursor: pointer;
+    padding: 5px 10px;
+    border-radius: $border-radius-md;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $background-color;
+    }
 
     .username {
       margin-left: 8px;
-      color: #606266;
+      color: $text-primary;
+      font-size: 13px;
+      font-weight: 500;
     }
   }
 }
@@ -212,6 +247,6 @@ const handleCommand = (command) => {
 .content {
   flex: 1;
   overflow-y: auto;
-  background: #f5f7fa;
+  background: $background-color;
 }
 </style>
