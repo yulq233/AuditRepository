@@ -25,24 +25,14 @@
 
         <div
           class="nav-group"
-          @mouseenter="samplingOpen = true"
-          @mouseleave="samplingOpen = false"
+          @mouseenter="openFlyout"
+          @mouseleave="closeFlyout"
         >
           <div :class="['nav-item', { 'is-active': isSamplingActive }]">
             <el-icon><DataAnalysis /></el-icon>
             <span>智能抽样</span>
             <el-icon class="nav-arrow"><ArrowRight /></el-icon>
           </div>
-          <transition name="flyout">
-            <div v-show="samplingOpen" class="flyout-panel">
-              <div class="flyout-title">智能抽样</div>
-              <router-link to="/sampling/wizard" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/wizard' }]">抽样向导</router-link>
-              <router-link to="/sampling/risk-profile" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/risk-profile' }]">风险画像</router-link>
-              <router-link to="/sampling/strategy" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/strategy' }]">抽样策略</router-link>
-              <router-link to="/sampling/execute" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/execute' }]">执行抽样</router-link>
-              <router-link to="/sampling/results" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/results' }]">抽样结果</router-link>
-            </div>
-          </transition>
         </div>
 
         <router-link to="/matching" :class="['nav-item', { 'is-active': activeMenu === '/matching' }]">
@@ -81,6 +71,24 @@
         </router-link>
       </nav>
     </div>
+
+    <!-- 弹出子菜单 - 放在 sidebar 外部避免被 overflow 裁剪 -->
+    <transition name="flyout">
+      <div
+        v-show="samplingOpen"
+        class="flyout-panel"
+        :style="{ top: flyoutTop + 'px' }"
+        @mouseenter="samplingOpen = true"
+        @mouseleave="samplingOpen = false"
+      >
+        <div class="flyout-title">智能抽样</div>
+        <router-link to="/sampling/wizard" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/wizard' }]">抽样向导</router-link>
+        <router-link to="/sampling/risk-profile" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/risk-profile' }]">风险画像</router-link>
+        <router-link to="/sampling/strategy" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/strategy' }]">抽样策略</router-link>
+        <router-link to="/sampling/execute" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/execute' }]">执行抽样</router-link>
+        <router-link to="/sampling/results" :class="['flyout-item', { 'is-active': activeMenu === '/sampling/results' }]">抽样结果</router-link>
+      </div>
+    </transition>
 
     <!-- 主内容区 -->
     <div class="main-container">
@@ -133,10 +141,21 @@ const activeMenu = computed(() => route.path)
 const currentRoute = computed(() => route)
 const username = computed(() => localStorage.getItem('username') || '用户')
 const samplingOpen = ref(false)
+const flyoutTop = ref(0)
 
 const isSamplingActive = computed(() =>
   route.path.startsWith('/sampling')
 )
+
+const openFlyout = (e) => {
+  const rect = e.currentTarget.getBoundingClientRect()
+  flyoutTop.value = rect.top
+  samplingOpen.value = true
+}
+
+const closeFlyout = () => {
+  samplingOpen.value = false
+}
 
 const handleCommand = (command) => {
   switch (command) {
@@ -161,6 +180,7 @@ const handleCommand = (command) => {
 .layout-container {
   display: flex;
   height: 100vh;
+  position: relative;
 }
 
 .sidebar {
@@ -170,6 +190,7 @@ const handleCommand = (command) => {
   display: flex;
   flex-direction: column;
   border-right: 1px solid $border-light;
+  flex-shrink: 0;
 
   .logo {
     height: $header-height;
@@ -193,7 +214,6 @@ const handleCommand = (command) => {
 .sidebar-nav {
   flex: 1;
   overflow-y: auto;
-  overflow-x: visible;
   padding: 6px;
 }
 
@@ -223,6 +243,7 @@ const handleCommand = (command) => {
 
   .nav-arrow {
     margin-right: 0;
+    margin-left: auto;
     font-size: 12px;
     transition: transform $transition-fast;
   }
@@ -245,36 +266,33 @@ const handleCommand = (command) => {
   }
 }
 
-// 子菜单容器
 .nav-group {
   position: relative;
 }
 
-// 右侧弹出面板
+// 弹出面板 - fixed定位，不受sidebar overflow影响
 .flyout-panel {
-  position: absolute;
-  left: calc(100% + 4px);
-  top: 0;
+  position: fixed;
+  left: #{$sidebar-width + 4px};
   width: 160px;
   background: $background-white;
   border: 1px solid $border-light;
   border-radius: $border-radius-lg;
   box-shadow: $shadow-lg;
   padding: 6px;
-  z-index: 200;
+  z-index: 2000;
+}
 
-  .flyout-title {
-    padding: 8px 14px 6px;
-    font-size: 11px;
-    font-weight: $font-weight-semibold;
-    color: $text-placeholder;
-    letter-spacing: 0.5px;
-  }
+.flyout-title {
+  padding: 8px 14px 6px;
+  font-size: 11px;
+  font-weight: $font-weight-semibold;
+  color: $text-placeholder;
+  letter-spacing: 0.5px;
 }
 
 .flyout-item {
-  display: flex;
-  align-items: center;
+  display: block;
   height: 36px;
   line-height: 36px;
   padding: 0 14px;
