@@ -26,9 +26,11 @@ router = APIRouter()
 
 class UserRegister(BaseModel):
     """用户注册请求"""
+    model_config = {"extra": "ignore"}  # 忽略未知字段
+
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6, max_length=100)
-    email: Optional[EmailStr] = None
+    email: Optional[str] = Field(None, max_length=100)
     full_name: Optional[str] = Field(None, max_length=100)
 
 
